@@ -10,6 +10,10 @@ export function usernameToEmail(username) {
   return `${username}@champapp.local`;
 }
 
+export function emailToUsername(email) {
+  return String(email || '').replace(/@champapp\.local$/, '');
+}
+
 export function pinToPassword(pin) {
   return `${pin}${PIN_SUFFIX}`;
 }

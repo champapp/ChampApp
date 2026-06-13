@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Chip, fmtDate } from '../../ui';
-import { CATS, messageStatus } from '../../lib/domain';
+import { CATS, messageStatus, PS_DIVISIONS, catTokenLabel } from '../../lib/domain';
 import { useMessages, usePlayers, useUpsertMessage, useDeleteMessage } from '../../lib/queries';
 
 const STATUS_COLORS = { activo: CC.good, programado: CC.gold, finalizado: CC.faint };
@@ -32,6 +32,7 @@ export function AdminMessages({ toast }) {
   const msgs = (messagesQ.data ?? []).slice().sort((a, b) => (b.start_date || '').localeCompare(a.start_date || ''));
   const activeN = msgs.filter((m) => messageStatus(m) === 'activo').length;
   const activeCats = CATS.filter((c) => players.some((p) => p.cat === c.id));
+  const psDivisions = PS_DIVISIONS.filter((d) => players.some((p) => p.cat === 'PS' && p.division === d));
 
   function startNew() { setDraft(blankDraft()); setOpen(true); }
   function edit(m) {
@@ -97,6 +98,10 @@ export function AdminMessages({ toast }) {
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <Chip active={!draft.cats.length} onClick={() => setDraft({ ...draft, cats: [] })}>Todo el club</Chip>
                 {activeCats.map((c) => <Chip key={c.id} active={draft.cats.includes(c.id)} onClick={() => toggleCat(c.id)}>{c.id}</Chip>)}
+                {psDivisions.map((d) => {
+                  const token = `PS:${d}`;
+                  return <Chip key={token} active={draft.cats.includes(token)} onClick={() => toggleCat(token)}>PS · {d}</Chip>;
+                })}
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <div style={{ flex: 1 }}>
@@ -121,7 +126,7 @@ export function AdminMessages({ toast }) {
             {msgs.map((m) => {
               const st = messageStatus(m);
               const a = m.cats || { type: 'all' };
-              const audLabel = a.type === 'cats' ? (a.cats || []).join(' · ') : (a.type === 'cat' ? a.cat : 'Todo el club');
+              const audLabel = a.type === 'cats' ? (a.cats || []).map(catTokenLabel).join(' · ') : (a.type === 'cat' ? a.cat : 'Todo el club');
               return (
                 <div key={m.id} style={{ border: `1px solid ${CC.line}`, borderRadius: 12, padding: '11px 12px', background: '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>

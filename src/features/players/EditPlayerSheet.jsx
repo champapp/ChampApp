@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { CC, Icon, Field, TextInput, SelectInput, Avatar } from '../../ui';
-import { CATS, catById, POSITIONS } from '../../lib/domain';
+import { CATS, catById, POSITIONS, PS_DIVISIONS } from '../../lib/domain';
 import { useUpdatePlayer, useUploadPlayerPhoto, useChangePin } from '../../lib/queries';
 import { AdminDocsEditor } from './AdminDocsEditor';
 import { PhotoCropSheet } from './PhotoCropSheet';
@@ -54,6 +54,7 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
     apellido: player.apellido,
     cat: player.cat,
     sub: player.sub,
+    division: player.division || '',
     birthDate: player.birth_date || '',
     dorsalKey: player.dorsal != null ? String(player.dorsal) : '',
     peso: player.peso ?? '',
@@ -71,7 +72,12 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
 
   function changeCat(v) {
     const c = catById(v);
-    setF((s) => ({ ...s, cat: v, sub: c && c.subs.length ? (s.sub && c.subs.includes(s.sub) ? s.sub : c.subs[0]) : null }));
+    setF((s) => ({
+      ...s,
+      cat: v,
+      sub: c && c.subs.length ? (s.sub && c.subs.includes(s.sub) ? s.sub : c.subs[0]) : null,
+      division: v === 'PS' ? s.division : '',
+    }));
   }
 
   function pickPhoto(e) {
@@ -102,6 +108,7 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
     const patch = {
       nombre: f.nombre.trim(), apellido: f.apellido.trim(),
       cat: f.cat, sub: f.sub,
+      division: f.cat === 'PS' ? (f.division || null) : null,
       birth_date: f.birthDate || null, birth_year: birthYear || null,
       peso, talla, imc,
       phone: f.phone.trim() || null,
@@ -184,12 +191,21 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
                 {CATS.map((c) => <option key={c.id} value={c.id}>{c.id} · {c.full}</option>)}
               </SelectInput>
             </Field>
-            <Field label="Subcategoría" half>
-              <SelectInput value={f.sub || ''} onChange={(e) => set('sub', e.target.value || null)}>
-                {subs.length === 0 && <option value="">—</option>}
-                {subs.map((s) => <option key={s} value={s}>{s}</option>)}
-              </SelectInput>
-            </Field>
+            {f.cat === 'PS' ? (
+              <Field label="División" half>
+                <SelectInput value={f.division || ''} onChange={(e) => set('division', e.target.value)}>
+                  <option value="">—</option>
+                  {PS_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </SelectInput>
+              </Field>
+            ) : (
+              <Field label="Subcategoría" half>
+                <SelectInput value={f.sub || ''} onChange={(e) => set('sub', e.target.value || null)}>
+                  {subs.length === 0 && <option value="">—</option>}
+                  {subs.map((s) => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </Field>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <Field label="Fecha de nacimiento" half><TextInput type="date" value={f.birthDate} onChange={(e) => set('birthDate', e.target.value)} /></Field>

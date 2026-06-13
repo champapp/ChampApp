@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { CC, Icon } from '../../ui';
 import { useAuth } from './useAuth';
+import { inputStyle, labelStyle, submitBtn } from './authStyles';
+import { PinField, ErrorMsg } from './authUi';
 
 function roleBtn(primary) {
   return {
@@ -11,75 +13,11 @@ function roleBtn(primary) {
   };
 }
 
-const inputStyle = {
-  width: '100%', boxSizing: 'border-box', border: '1.5px solid rgba(255,255,255,0.16)',
-  background: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: '12px 14px',
-  color: '#fff', fontFamily: 'Barlow, sans-serif', fontSize: 16,
-};
-
-const labelStyle = {
-  fontFamily: 'Barlow, sans-serif', fontSize: 12.5, letterSpacing: 0.5,
-  color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', fontWeight: 600,
-  marginBottom: 6, display: 'block',
-};
-
-const submitBtn = {
-  width: '100%', cursor: 'pointer', border: 'none', borderRadius: 12,
-  background: CC.gold, color: CC.navy900, padding: '13px 16px',
-  fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, letterSpacing: 0.4,
-};
-
 const backBtn = {
   display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', border: 'none',
   background: 'transparent', color: 'rgba(255,255,255,0.7)', padding: '6px 0', marginBottom: 14,
   fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: 0.3,
 };
-
-function PinField({ value, onChange }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <label style={labelStyle}>PIN</label>
-      <div style={{ position: 'relative' }}>
-        <input
-          type={show ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          placeholder="••••"
-          inputMode="numeric"
-          maxLength={4}
-          style={{ ...inputStyle, paddingRight: 44 }}
-          autoComplete="off"
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          style={{
-            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-            border: 'none', background: 'transparent', cursor: 'pointer',
-            color: 'rgba(255,255,255,0.55)', padding: 8, display: 'flex',
-          }}
-          aria-label={show ? 'Ocultar' : 'Mostrar'}
-        >
-          <Icon name={show ? 'eyeOff' : 'eye'} size={19} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ErrorMsg({ children }) {
-  if (!children) return null;
-  return (
-    <div style={{
-      background: 'rgba(224,82,78,0.15)', border: '1px solid rgba(224,82,78,0.4)',
-      borderRadius: 10, padding: '10px 12px', marginBottom: 14,
-      fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: '#FFD7D5',
-    }}>
-      {children}
-    </div>
-  );
-}
 
 // Login con usuario + PIN de 4 dígitos. Sirve tanto para administradores
 // como para jugadores: el rol se determina del lado del servidor según

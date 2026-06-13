@@ -54,14 +54,35 @@ export async function resolveAudience(supabase, audience) {
   }
 
   if (type === 'cats') {
-    const cats = audience.cats ?? [];
+    // cada elemento de `cats` es una categoria simple ('M19') o, para
+    // Plantel Superior, una combinacion categoria:division ('PS:Primera')
+    const tokens = audience.cats ?? [];
+    if (!tokens.length) return [];
+
+    const plainCats = new Set();
+    const divisionPairs = [];
+    for (const token of tokens) {
+      if (token.includes(':')) {
+        const [cat, division] = token.split(':');
+        divisionPairs.push({ cat, division });
+      } else {
+        plainCats.add(token);
+      }
+    }
+    const cats = [...new Set([...plainCats, ...divisionPairs.map((p) => p.cat)])];
     if (!cats.length) return [];
+
     const { data, error } = await supabase
       .from('push_subscriptions')
-      .select('endpoint, p256dh, auth, players!inner(cat)')
+      .select('endpoint, p256dh, auth, players!inner(cat, division)')
       .in('players.cat', cats);
     if (error) throw error;
-    return data ?? [];
+
+    return (data ?? []).filter((row) => {
+      const p = row.players;
+      if (plainCats.has(p.cat)) return true;
+      return divisionPairs.some((d) => d.cat === p.cat && d.division === p.division);
+    });
   }
 
   if (type === 'admins') {

@@ -444,6 +444,9 @@ export const PS_DIVS = [
   { key: 'time_preintermedia', citeKey: 'cite_preintermedia', label: 'Pre-Intermedia' },
 ];
 
+// labels de division para jugadores de Plantel Superior (players.division)
+export const PS_DIVISIONS = PS_DIVS.map((d) => d.label);
+
 // horarios de kick off (y citación) cargados para un partido de PS, por división
 export function psMatchTimes(m) {
   return PS_DIVS.filter((d) => m[d.key]).map((d) => ({ label: d.label, time: m[d.key], cite: m[d.citeKey] || null }));
@@ -677,13 +680,29 @@ export function fisioForPlayer(bookings, playerId, today = todayISO()) {
 
 // ── Comunicados ─────────────────────────────────────────────
 
+// Compara un jugador contra un token de categoría dentro de `cats`. El token
+// puede ser una categoría simple ('M19') o, para Plantel Superior, una
+// combinación categoría:división ('PS:Primera').
+export function playerMatchesCatToken(player, token) {
+  if (token.includes(':')) {
+    const [cat, division] = token.split(':');
+    return player.cat === cat && player.division === division;
+  }
+  return player.cat === token;
+}
+
+// 'PS:Primera' -> 'PS · Primera' (para mostrar la audiencia de un comunicado)
+export function catTokenLabel(token) {
+  return token.includes(':') ? token.replace(':', ' · ') : token;
+}
+
 // `message.cats` guarda la audiencia: { type: 'all' | 'player' | 'cat' | 'cats', ... }
 export function msgAudienceMatch(message, player) {
   const a = message.cats || { type: 'all' };
   if (a.type === 'all') return true;
   if (a.type === 'player') return a.playerId === player.id;
   if (a.type === 'cat') return a.cat === player.cat && (!a.sub || a.sub === player.sub);
-  if (a.type === 'cats') return (a.cats || []).includes(player.cat);
+  if (a.type === 'cats') return (a.cats || []).some((t) => playerMatchesCatToken(player, t));
   return false;
 }
 

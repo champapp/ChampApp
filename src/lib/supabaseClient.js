@@ -7,4 +7,10 @@ if (!url || !anonKey) {
   throw new Error('Faltan VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY (revisá .env.local)');
 }
 
-export const supabase = createClient(url, anonKey);
+export const supabase = createClient(url, anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    storage: window.localStorage,
+  },
+});

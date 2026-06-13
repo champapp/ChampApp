@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { CC } from './ui';
 import { useAuth } from './features/auth/useAuth';
 import { Login } from './features/auth/Login';
+import { PinLockScreen } from './features/auth/PinLockScreen';
 import { AppShell } from './components/layout/AppShell';
+import { getRememberedDevice } from './lib/deviceAuth';
 
 function LoadingScreen() {
   return (
@@ -15,8 +18,13 @@ function LoadingScreen() {
 
 function App() {
   const { session, loading } = useAuth();
+  const [remembered] = useState(getRememberedDevice);
+  const [unlocked, setUnlocked] = useState(() => !getRememberedDevice());
 
   if (loading) return <LoadingScreen />;
+  if (remembered && !unlocked) {
+    return <PinLockScreen remembered={remembered} onUnlock={() => setUnlocked(true)} />;
+  }
   if (!session) return <Login />;
   return <AppShell />;
 }

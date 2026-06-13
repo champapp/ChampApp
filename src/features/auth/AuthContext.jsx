@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { usernameToEmail, pinToPassword } from '../../lib/localAuth';
+import { usernameToEmail, pinToPassword, emailToUsername } from '../../lib/localAuth';
+import { rememberDevice, forgetDevice } from '../../lib/deviceAuth';
+import { unsubscribePush } from '../../lib/push';
 import { AuthContext } from './auth-context';
 
 // Carga el rol (admin/jugador) y, si es jugador, su fila de `players`.
@@ -27,6 +29,19 @@ async function loadProfile(session) {
   return { role: roleRow.role, player: null };
 }
 
+// Guarda en este dispositivo quién inició sesión (sin PIN ni tokens), para
+// mostrar la pantalla de candado con su nombre/foto la próxima vez que se
+// abra la app.
+function rememberFromProfile(session, profile) {
+  if (!session || !profile.role) return;
+  rememberDevice({
+    username: emailToUsername(session.user.email),
+    name: profile.player ? profile.player.name : 'Administrador',
+    photo_url: profile.player ? profile.player.photo_url : null,
+    role: profile.role,
+  });
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
@@ -44,6 +59,7 @@ export function AuthProvider({ children }) {
       setRole(profile.role);
       setPlayer(profile.player);
       setLoading(false);
+      rememberFromProfile(data.session, profile);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
@@ -53,6 +69,7 @@ export function AuthProvider({ children }) {
       if (!active) return;
       setRole(profile.role);
       setPlayer(profile.player);
+      rememberFromProfile(newSession, profile);
     });
 
     return () => {
@@ -70,6 +87,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    try {
+      await unsubscribePush();
+    } catch {
+      // el borrado de la suscripción push es best-effort
+    }
+    forgetDevice();
     await supabase.auth.signOut();
   }, []);
 

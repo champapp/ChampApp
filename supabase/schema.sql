@@ -19,6 +19,7 @@ create table if not exists public.players (
   name            text generated always as (nombre || ' ' || apellido) stored,
   cat             text not null,                 -- PS, M19, M17, M15, M13, M11, M9, M7
   sub             text,                          -- año de nacimiento (categorias menores)
+  division        text,                          -- solo cat='PS': 'Primera' | 'Intermedia' | 'Pre-Intermedia'
   birth_year      int,
   birth_date      date,
   peso            numeric,
@@ -39,6 +40,9 @@ create table if not exists public.players (
   created_at      timestamptz not null default now()
 );
 create index if not exists players_cat_sub_idx on public.players (cat, sub);
+
+-- migracion: division dentro de Plantel Superior (Primera/Intermedia/Pre-Intermedia)
+alter table public.players add column if not exists division text;
 
 -- Registro fotografico (frente/espalda/perfil), solo lectura para el jugador
 create table if not exists public.player_photos (
@@ -301,7 +305,7 @@ security definer
 set search_path = public
 as $$
 declare
-  allowed text[] := array['nombre','apellido','cat','sub','birth_year','birth_date','pos','pos_short','pos_type','dorsal','phone','emergency_contact','emergency_medical','peso','talla','imc','photo_url'];
+  allowed text[] := array['nombre','apellido','cat','sub','division','birth_year','birth_date','pos','pos_short','pos_type','dorsal','phone','emergency_contact','emergency_medical','peso','talla','imc','photo_url'];
   merged jsonb;
 begin
   if public.is_admin() or auth.uid() is null then
