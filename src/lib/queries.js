@@ -5,6 +5,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabaseClient';
 import { pinToPassword } from './localAuth';
+import { sendPush } from './push';
+
+// Convierte la audiencia de un comunicado (message.cats, ver domain.js
+// msgAudienceMatch) al formato de audiencia de la Edge Function send-push.
+function messageAudienceToPush(cats) {
+  const a = cats || { type: 'all' };
+  if (a.type === 'player') return { type: 'players', playerIds: [a.playerId] };
+  if (a.type === 'cat') return { type: 'cats', cats: [a.cat] };
+  if (a.type === 'cats') return { type: 'cats', cats: a.cats || [] };
+  return { type: 'all' };
+}
 
 async function selectAll(table, columns = '*') {
   const { data, error } = await supabase.from(table).select(columns);
@@ -274,7 +285,16 @@ export function useUpsertMatch() {
       if (error) throw error;
       return data.id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['matches'] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
+      const rivalTxt = variables.rival ? ` vs ${variables.rival}` : '';
+      sendPush({
+        audience: { type: 'cats', cats: [variables.cat] },
+        title: variables.id ? 'Partido actualizado' : 'Partido nuevo',
+        body: `${variables.cat}${rivalTxt} — ${variables.date}`,
+        url: '/?tab=calendar',
+      });
+    },
   });
 }
 
@@ -324,7 +344,16 @@ export function useUpsertLineup() {
       if (error) throw error;
       return data.id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['lineups'] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['lineups'] });
+      const playerIds = Object.values(variables.positions || {}).filter(Boolean).map(Number);
+      sendPush({
+        audience: { type: 'players', playerIds },
+        title: 'Alineación publicada',
+        body: variables.name ? `Ya está la alineación: ${variables.name}` : 'Ya está la alineación del partido.',
+        url: '/?tab=home',
+      });
+    },
   });
 }
 
@@ -436,7 +465,15 @@ export function useUpsertMessage() {
       if (error) throw error;
       return data.id;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['messages'] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      sendPush({
+        audience: messageAudienceToPush(variables.cats),
+        title: variables.title,
+        body: variables.body,
+        url: '/?tab=home',
+      });
+    },
   });
 }
 

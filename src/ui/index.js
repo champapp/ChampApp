@@ -9,6 +9,7 @@ export { SectionTitle } from './SectionTitle';
 export { Chip } from './Chip';
 export { Empty } from './Empty';
 export { Toast } from './Toast';
+export { Toggle } from './Toggle';
 export { CatBadge } from './CatBadge';
 export { Field, TextInput, SelectInput } from './Form';
 export { BarRow } from './BarRow';

@@ -31,6 +31,8 @@ export default defineConfig({
         // solo se precachea el shell estatico de la app (JS/CSS/HTML/iconos).
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // Listeners de notificaciones push (push / notificationclick).
+        importScripts: ['push-sw.js'],
       },
     }),
   ],

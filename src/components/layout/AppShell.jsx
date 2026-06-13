@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CC, Icon, Card } from '../../ui';
 import { useAuth } from '../../features/auth/useAuth';
 import { useRealtimeSync } from '../../lib/useRealtimeSync';
+import { useAutoSubscribePush } from '../../lib/push';
 import { AppHeader } from './AppHeader';
 import { BottomNav } from './BottomNav';
 import { PlayerHome } from '../../features/home/PlayerHome';
@@ -37,6 +38,19 @@ const PLAYER_SCREENS = {
   shop: { title: 'Shop', icon: 'bag' },
 };
 
+// Lee ?tab=&playerId= de la URL (link de una notificación push) y limpia la
+// URL para no reaplicar el deep link en navegaciones futuras dentro de la app.
+function readDeepLinkFromUrl() {
+  if (typeof window === 'undefined') return {};
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('tab') && !params.has('playerId')) return {};
+
+  const tab = params.get('tab');
+  const playerId = params.get('playerId');
+  window.history.replaceState(null, '', window.location.pathname);
+  return { tab, playerId: playerId ? Number(playerId) : null };
+}
+
 function PlaceholderScreen({ title, icon }) {
   return (
     <div style={{ padding: 16 }}>
@@ -58,10 +72,12 @@ function PlaceholderScreen({ title, icon }) {
 export function AppShell() {
   const { role } = useAuth();
   useRealtimeSync();
+  useAutoSubscribePush();
   const isAdmin = role === 'admin';
   const screens = isAdmin ? ADMIN_SCREENS : PLAYER_SCREENS;
-  const [tab, setTab] = useState('home');
-  const [alertPlayerId, setAlertPlayerId] = useState(null);
+  const [deepLink] = useState(readDeepLinkFromUrl);
+  const [tab, setTab] = useState(() => (deepLink.tab && screens[deepLink.tab] ? deepLink.tab : 'home'));
+  const [alertPlayerId, setAlertPlayerId] = useState(deepLink.playerId ?? null);
   const screen = screens[tab] ?? screens.home;
 
   function openPlayerFromAlert(id) {

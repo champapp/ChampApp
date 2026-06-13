@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { CC, Icon, Crest } from '../../ui';
 import { useAuth } from '../../features/auth/useAuth';
 import { AttendanceAlertBell } from '../admin/AttendanceAlertBell';
+import { NotificationSettingsSheet } from '../../features/settings/NotificationSettingsSheet';
 
 export function AppHeader({ onOpenAlertPlayer }) {
   const { role, player, signOut } = useAuth();
+  const [showSettings, setShowSettings] = useState(false);
   const isAdmin = role === 'admin';
   const subtitle = isAdmin
     ? 'Champagnat Rugby · Admin'
@@ -36,6 +39,17 @@ export function AppHeader({ onOpenAlertPlayer }) {
       </div>
       {isAdmin && <AttendanceAlertBell onOpenPlayer={onOpenAlertPlayer} />}
       <button
+        onClick={() => setShowSettings(true)}
+        aria-label="Notificaciones"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+          border: 'none', background: 'rgba(255,255,255,0.1)', cursor: 'pointer',
+        }}
+      >
+        <Icon name="settings" size={18} color="#fff" sw={2.2} />
+      </button>
+      <button
         onClick={signOut}
         aria-label="Cerrar sesión"
         style={{
@@ -46,6 +60,7 @@ export function AppHeader({ onOpenAlertPlayer }) {
       >
         <Icon name="logout" size={18} color="#fff" sw={2.2} />
       </button>
+      {showSettings && <NotificationSettingsSheet onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

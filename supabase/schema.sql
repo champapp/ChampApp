@@ -510,6 +510,40 @@ drop policy if exists admin_docs_delete_admin on public.admin_docs;
 create policy admin_docs_delete_admin on public.admin_docs
   for delete to authenticated using (public.is_admin());
 
+-- ---- push_subscriptions: suscripciones a notificaciones push del navegador ----
+-- Una fila por dispositivo/navegador suscrito. player_id queda NULL para
+-- cuentas admin que no tienen fila en players.
+create table if not exists public.push_subscriptions (
+  id          bigint generated always as identity primary key,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  player_id   bigint references public.players(id) on delete cascade,
+  endpoint    text not null unique,
+  p256dh      text not null,
+  auth        text not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx on public.push_subscriptions (user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists push_subscriptions_select on public.push_subscriptions;
+create policy push_subscriptions_select on public.push_subscriptions
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists push_subscriptions_insert_own_or_admin on public.push_subscriptions;
+create policy push_subscriptions_insert_own_or_admin on public.push_subscriptions
+  for insert to authenticated with check (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists push_subscriptions_update_own_or_admin on public.push_subscriptions;
+create policy push_subscriptions_update_own_or_admin on public.push_subscriptions
+  for update to authenticated
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists push_subscriptions_delete_own_or_admin on public.push_subscriptions;
+create policy push_subscriptions_delete_own_or_admin on public.push_subscriptions
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
 -- ============================================================
 -- STORAGE: bucket de fotos de jugadores
 -- ============================================================
@@ -602,3 +636,40 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ============================================================
+-- ALARMAS DIARIAS: pg_cron llama todos los dias a las 11:00 UTC
+-- (08:00 Montevideo) a la Edge Function `daily-alerts`, que revisa
+-- documentacion por vencer (30 dias) y lesiones con alta de hoy.
+--
+-- La funcion valida un secreto compartido (CRON_SECRET) en el header
+-- Authorization -- no usa tu service_role key.
+--
+-- ACCION TUYA, una sola vez (no commitear el valor real):
+-- ejecuta SOLO esta linea con el secreto que te paso aparte:
+--
+--   select vault.create_secret('<CRON_SECRET>', 'cron_secret');
+--
+-- Despues, ejecuta el resto de este archivo (incluido este bloque) con
+-- normalidad: es seguro re-ejecutarlo.
+-- ============================================================
+
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'daily-alerts',
+  '0 11 * * *',
+  $$
+  select net.http_post(
+    url := 'https://wgmurykchdgktqvsdnxo.supabase.co/functions/v1/daily-alerts',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (
+        select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret'
+      )
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
