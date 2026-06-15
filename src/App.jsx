@@ -17,7 +17,7 @@ function LoadingScreen() {
 }
 
 function App() {
-  const { session, loading } = useAuth();
+  const { session, role, loading } = useAuth();
   const [remembered, setRemembered] = useState(getRememberedDevice);
   const [unlocked, setUnlocked] = useState(() => !getRememberedDevice());
 
@@ -32,6 +32,10 @@ function App() {
     );
   }
   if (!session) return <Login />;
+  // Hay sesión pero todavía no sabemos el rol/perfil (instante entre el
+  // login y la respuesta de Supabase): esperar antes de mostrar la app, para
+  // no renderizar AppShell sin esos datos.
+  if (!role) return <LoadingScreen />;
   return <AppShell />;
 }
 
