@@ -8,7 +8,7 @@ import { PinField, ErrorMsg } from './authUi';
 // (nombre/foto), solo hace falta el PIN para volver a entrar. La sesión de
 // Supabase sigue viva detrás de este candado; "entrar" simplemente
 // re-valida el PIN contra Supabase.
-export function PinLockScreen({ remembered, onUnlock }) {
+export function PinLockScreen({ remembered, onUnlock, onForgetDevice }) {
   const { signIn, signOut } = useAuth();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -31,6 +31,11 @@ export function PinLockScreen({ remembered, onUnlock }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const forgetDevice = async () => {
+    await signOut();
+    onForgetDevice();
   };
 
   return (
@@ -58,7 +63,7 @@ export function PinLockScreen({ remembered, onUnlock }) {
         </form>
         <button
           type="button"
-          onClick={signOut}
+          onClick={forgetDevice}
           style={{
             display: 'block', margin: '16px auto 0', border: 'none', background: 'transparent',
             color: 'rgba(255,255,255,0.55)', fontFamily: 'Barlow, sans-serif', fontSize: 13,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { usernameToEmail, pinToPassword, emailToUsername } from '../../lib/localAuth';
 import { rememberDevice, forgetDevice } from '../../lib/deviceAuth';
@@ -47,6 +47,10 @@ export function AuthProvider({ children }) {
   const [role, setRole] = useState(null);
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Una vez resuelto el perfil (rol + jugador) de la sesión actual, los
+  // siguientes eventos de auth (ej. refresh de token) no vuelven a mostrar
+  // la pantalla de carga: evita el "parpadeo" mientras se revalida.
+  const resolvedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -54,21 +58,41 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
       setSession(data.session);
-      const profile = await loadProfile(data.session);
+      let profile;
+      try {
+        profile = await loadProfile(data.session);
+      } catch (err) {
+        console.error('[auth] no se pudo cargar el perfil', err);
+        profile = { role: null, player: null };
+      }
       if (!active) return;
       setRole(profile.role);
       setPlayer(profile.player);
       setLoading(false);
+      resolvedRef.current = !!profile.role;
       rememberFromProfile(data.session, profile);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!active) return;
+      // Si la sesión cambia (login, logout, ...) antes de que sepamos el
+      // rol/jugador, mostramos la pantalla de carga en vez de renderizar la
+      // app con datos viejos/incompletos.
+      const needsLoading = !!newSession && !resolvedRef.current;
+      if (needsLoading) setLoading(true);
       setSession(newSession);
-      const profile = await loadProfile(newSession);
+      let profile;
+      try {
+        profile = await loadProfile(newSession);
+      } catch (err) {
+        console.error('[auth] no se pudo cargar el perfil', err);
+        profile = { role: null, player: null };
+      }
       if (!active) return;
       setRole(profile.role);
       setPlayer(profile.player);
+      if (needsLoading) setLoading(false);
+      resolvedRef.current = !!profile.role;
       rememberFromProfile(newSession, profile);
     });
 

@@ -18,12 +18,18 @@ function LoadingScreen() {
 
 function App() {
   const { session, loading } = useAuth();
-  const [remembered] = useState(getRememberedDevice);
+  const [remembered, setRemembered] = useState(getRememberedDevice);
   const [unlocked, setUnlocked] = useState(() => !getRememberedDevice());
 
   if (loading) return <LoadingScreen />;
   if (remembered && !unlocked) {
-    return <PinLockScreen remembered={remembered} onUnlock={() => setUnlocked(true)} />;
+    return (
+      <PinLockScreen
+        remembered={remembered}
+        onUnlock={() => setUnlocked(true)}
+        onForgetDevice={() => setRemembered(null)}
+      />
+    );
   }
   if (!session) return <Login />;
   return <AppShell />;
