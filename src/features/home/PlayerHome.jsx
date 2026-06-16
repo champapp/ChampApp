@@ -20,6 +20,7 @@ import { RsvpSurveyCard } from '../matches/RsvpSurveyCard';
 import { PlayerLineups } from '../matches/lineups/PlayerLineups';
 import { NextMatchCard } from '../matches/NextMatchCard';
 import { EditPlayerSheet } from '../players/EditPlayerSheet';
+import { MatchRecord } from '../players/MatchRecord';
 
 function HomeLoading() {
   return (
@@ -85,6 +86,7 @@ export function PlayerHome() {
         </div>
       )}
       <div style={{ padding: '16px 16px 0' }}>
+        <MatchRecord player={player} matches={data.matches} />
         <FeedBoard storageKey={'champ_feed_' + player.id} widgets={widgets} title="Personalizar mi feed" />
       </div>
       {editing && (

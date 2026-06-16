@@ -32,8 +32,15 @@ function CredentialsForm({ onBack, usernamePlaceholder }) {
   const [usernames, setUsernames] = useState([]);
 
   useEffect(() => {
+    // Carga los usernames guardados en localStorage (los que ya iniciaron sesión en este dispositivo)
+    const stored = JSON.parse(localStorage.getItem('champ_known_users') || '[]');
+
+    // Intenta cargar la lista completa de Supabase (solo funciona si hay política pública de SELECT)
     supabase.from('players').select('username').then(({ data }) => {
-      if (data) setUsernames(data.map((p) => p.username).filter(Boolean).sort());
+      const fromDb = data ? data.map((p) => p.username).filter(Boolean) : [];
+      const merged = Array.from(new Set([...fromDb, ...stored])).sort();
+      if (merged.length) setUsernames(merged);
+      else if (stored.length) setUsernames(stored);
     });
   }, []);
 
@@ -47,6 +54,11 @@ function CredentialsForm({ onBack, usernamePlaceholder }) {
     setSubmitting(true);
     try {
       await signIn(username, pin);
+      // Guarda el username en localStorage para que el datalist funcione en el futuro
+      const stored = JSON.parse(localStorage.getItem('champ_known_users') || '[]');
+      if (!stored.includes(username)) {
+        localStorage.setItem('champ_known_users', JSON.stringify([...stored, username].sort()));
+      }
     } catch {
       setError('Usuario o PIN incorrectos.');
     } finally {
