@@ -166,7 +166,7 @@ export function AdminMessages({ toast }) {
   function edit(m) {
     const a = m.cats || { type: 'all' };
     const cats = a.type === 'cats' ? (a.cats || []).slice() : (a.type === 'cat' ? [a.cat] : []);
-    setDraft({ id: m.id, title: m.title, body: m.body || '', cats, start_date: m.start_date || '', end_date: m.end_date || '' });
+    setDraft({ id: m.id, title: m.title, body: m.body || '', cats, start_date: m.start_date || '', end_date: m.end_date || '', attachment_url: m.attachment_url || '', attachment_name: m.attachment_name || '', attachment_type: m.attachment_type || '' });
     setOpen(true);
   }
   function toggleCat(id) {
