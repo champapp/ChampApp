@@ -78,15 +78,17 @@ export function PlayerGallery({ player, isAdmin, toast }) {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <SectionTitle icon="camera" style={{ marginBottom: 0 }}>Fotos</SectionTitle>
-        {isAdmin && photos.length > 0 && (
+      <SectionTitle
+        icon="camera"
+        action={isAdmin && photos.length > 0 ? (
           <button
             onClick={() => setDelMode((v) => !v)}
             style={{ background: delMode ? CC.bad : 'rgba(14,58,92,0.07)', border: 'none', borderRadius: 8, padding: '5px 11px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: delMode ? '#fff' : CC.muted, letterSpacing: 0.3 }}
           >{delMode ? 'Listo' : 'Eliminar'}</button>
-        )}
-      </div>
+        ) : null}
+      >
+        Fotos
+      </SectionTitle>
 
       {photos.length === 0 && !isAdmin && (
         <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.faint, marginBottom: 16 }}>Sin fotos aún.</div>
