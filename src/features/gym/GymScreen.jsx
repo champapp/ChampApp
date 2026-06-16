@@ -1,11 +1,12 @@
 import { CC, Icon, Card, SectionTitle, Empty, Toast, fmtDate } from '../../ui';
 import { useAuth } from '../auth/useAuth';
 import { latestGymMarks, routinesForPlayer } from '../../lib/domain';
-import { useRoutines, useGymChecks, useGymMarks } from '../../lib/queries';
+import { useRoutines, useGymChecks, useGymMarks, useMatches } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { PlayerRoutines } from './PlayerRoutines';
 import { GymMarksHistory } from './GymMarksHistory';
 import { PlayerGallery } from '../players/PlayerGallery';
+import { MatchRecord } from '../players/MatchRecord';
 
 export function GymScreen() {
   const { player } = useAuth();
@@ -13,6 +14,7 @@ export function GymScreen() {
   const routinesQ = useRoutines();
   const gymChecksQ = useGymChecks();
   const gymMarksQ = useGymMarks();
+  const matchesQ = useMatches();
 
   if (routinesQ.isLoading || gymChecksQ.isLoading || gymMarksQ.isLoading) {
     return <div style={{ padding: '40px 16px', textAlign: 'center', fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>;
@@ -66,6 +68,8 @@ export function GymScreen() {
           <GymMarksHistory gymMarks={gymMarks} player={player} />
         </div>
       )}
+
+      <MatchRecord player={player} matches={matchesQ.data ?? []} />
 
       <PlayerGallery player={player} isAdmin={false} />
 

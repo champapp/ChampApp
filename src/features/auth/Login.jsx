@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CC, Icon } from '../../ui';
 import { useAuth } from './useAuth';
+import { supabase } from '../../lib/supabaseClient';
 import { inputStyle, labelStyle, submitBtn } from './authStyles';
 import { PinField, ErrorMsg } from './authUi';
 
@@ -28,6 +29,13 @@ function CredentialsForm({ onBack, usernamePlaceholder }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [usernames, setUsernames] = useState([]);
+
+  useEffect(() => {
+    supabase.from('players').select('username').then(({ data }) => {
+      if (data) setUsernames(data.map((p) => p.username).filter(Boolean).sort());
+    });
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -55,8 +63,12 @@ function CredentialsForm({ onBack, usernamePlaceholder }) {
         <label style={labelStyle}>Usuario</label>
         <input
           type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-          placeholder={usernamePlaceholder} style={inputStyle} autoCapitalize="none" autoComplete="username" required
+          placeholder={usernamePlaceholder} style={inputStyle} autoCapitalize="none"
+          autoComplete="off" list="champ-usernames" required
         />
+        <datalist id="champ-usernames">
+          {usernames.map((u) => <option key={u} value={u} />)}
+        </datalist>
       </div>
       <PinField value={pin} onChange={setPin} />
       <ErrorMsg>{error}</ErrorMsg>

@@ -9,6 +9,7 @@ import { useToast } from '../../lib/useToast';
 import { EditPlayerSheet } from './EditPlayerSheet';
 import { PlayerGallery } from './PlayerGallery';
 import { MeasurementsCard } from './MeasurementsCard';
+import { MatchRecord } from './MatchRecord';
 import { PhysCard } from './PhysCard';
 import { NextMatchCard } from '../matches/NextMatchCard';
 import { PlayerMatchRsvp } from '../matches/PlayerMatchRsvp';
@@ -137,6 +138,9 @@ export function PlayerProfileScreen({ playerId, onBack }) {
 
         {/* encuesta de asistencia (vista admin) */}
         <PlayerMatchRsvp player={p} />
+
+        {/* récord de partidos */}
+        <MatchRecord player={p} matches={matchesQ.data ?? []} />
 
         {/* asistencia */}
         <Card pad={14} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
