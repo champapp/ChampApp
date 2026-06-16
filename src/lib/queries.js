@@ -242,6 +242,39 @@ export function useUploadPlayerPhoto() {
   });
 }
 
+// Sube una foto al álbum de un jugador (bucket `player-photos`, carpeta `gallery/<id>/`).
+export function useUploadGalleryPhoto() {
+  return useMutation({
+    mutationFn: async ({ playerId, file }) => {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `gallery/${playerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('player-photos').upload(path, file, {
+        cacheControl: '3600',
+        contentType: file.type || 'image/jpeg',
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from('player-photos').getPublicUrl(path);
+      return data.publicUrl;
+    },
+  });
+}
+
+// Guarda el array de URLs del álbum de fotos de un jugador (admin only).
+export function useSavePlayerGallery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ playerId, photos }) => {
+      const { error } = await supabase
+        .from('players')
+        .update({ gallery_photos: photos })
+        .eq('id', playerId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
+  });
+}
+
 // PIN de acceso actual de un jugador. La política de `player_pins` solo deja
 // leerlo al propio jugador o a un admin (los demás reciben null).
 export function usePlayerPin(playerId) {
@@ -390,6 +423,23 @@ export function useSaveAttendance() {
       const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'practice_id,player_id' });
       if (error) throw error;
       return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['practices'] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+    },
+  });
+}
+
+// Elimina una práctica (y su asistencia en cascada) — solo admins.
+export function useDeletePractice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error: attErr } = await supabase.from('attendance').delete().eq('practice_id', id);
+      if (attErr) throw attErr;
+      const { error } = await supabase.from('practices').delete().eq('id', id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['practices'] });

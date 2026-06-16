@@ -1,5 +1,5 @@
 import { CC, Icon, matchLongDate, daysUntil } from '../../ui';
-import { psMatchTimes } from '../../lib/domain';
+import { psMatchTimes, m17MatchTimes } from '../../lib/domain';
 
 function Row({ icon, label, value, accent }) {
   return (
@@ -21,6 +21,7 @@ export function NextMatchCard({ match: m, player }) {
   const dleft = daysUntil(m.date);
   const when = dleft === 0 ? '¡Hoy!' : dleft === 1 ? 'Mañana' : 'En ' + dleft + ' días';
   const psTimes = m.cat === 'PS' ? psMatchTimes(m) : [];
+  const m17Times = m.cat === 'M17' ? m17MatchTimes(m) : [];
 
   return (
     <div style={{ marginBottom: 16, borderRadius: 20, overflow: 'hidden', background: `linear-gradient(155deg, ${CC.navy} 0%, ${CC.navy900} 100%)`, boxShadow: '0 10px 28px rgba(7,36,61,0.22)', position: 'relative' }}>
@@ -48,8 +49,8 @@ export function NextMatchCard({ match: m, player }) {
           <Row icon="pin" label="Dónde" value={m.place} accent={m.home ? CC.good : CC.gold} />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-          {m.cat === 'PS'
-            ? psTimes.map((t) => (
+          {(m.cat === 'PS' || m.cat === 'M17') && (psTimes.length || m17Times.length)
+            ? (psTimes.length ? psTimes : m17Times).map((t) => (
               <Row key={t.label} icon="clock" label={t.label} value={(
                 <>
                   <div>Kick off {t.time}</div>

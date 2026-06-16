@@ -27,7 +27,7 @@ export function ShopQuickStock({ items, onClose, toast }) {
           <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(14,58,92,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={18} color={CC.navy} sw={2.4} /></button>
         </div>
 
-        <div style={{ overflowY: 'auto', padding: '12px 14px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 14px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items.length === 0 && <Empty t="No hay productos cargados" />}
           {items.map((it) => {
             const total = (it.sizes || []).reduce((a, s) => a + (s.stock || 0), 0);

@@ -5,7 +5,7 @@ import {
 import { useAuth } from '../auth/useAuth';
 import {
   usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymChecks, useRoutines,
-  useActiveInjuries, useSaveAttendance,
+  useActiveInjuries, useSaveAttendance, useDeletePractice,
 } from '../../lib/queries';
 import {
   CATS, catById, todayISO, ageFromBirth, playerAttendance, playerHistory, playerStreak,
@@ -92,6 +92,8 @@ export function AttendanceScreen() {
   const routinesQ = useRoutines();
   const injuriesQ = useActiveInjuries();
   const saveMutation = useSaveAttendance();
+  const deleteMutation = useDeletePractice();
+  const [confirmDelId, setConfirmDelId] = useState(null);
 
   const [catId, setCatId] = useState(player ? player.cat : 'M15');
   const [sub, setSub] = useState(() => {
@@ -269,17 +271,41 @@ export function AttendanceScreen() {
           {groupPractices.length === 0 && <Empty t="Sin prácticas registradas" />}
           {groupPractices.map((pr) => {
             const active = current && pr.id === current.id;
+            const confirming = confirmDelId === pr.id;
             return (
-              <button key={pr.id} onClick={() => selectDate(pr)} style={{
-                border: active ? 'none' : `1.5px solid ${CC.line}`, cursor: 'pointer',
-                background: active ? CC.navy : '#fff', color: active ? '#fff' : CC.ink,
-                borderRadius: 12, padding: '8px 12px', whiteSpace: 'nowrap', textAlign: 'center', flexShrink: 0,
-              }}>
-                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, lineHeight: 1 }}>{fmtDate(pr.date)}</div>
-                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: active ? 'rgba(255,255,255,0.7)' : CC.faint, marginTop: 2 }}>
-                  {WEEKDAYS[new Date(pr.date + 'T12:00').getDay()]}
-                </div>
-              </button>
+              <div key={pr.id} style={{ position: 'relative', flexShrink: 0 }}>
+                <button onClick={() => { setConfirmDelId(null); selectDate(pr); }} style={{
+                  border: active ? 'none' : `1.5px solid ${CC.line}`, cursor: 'pointer',
+                  background: active ? CC.navy : '#fff', color: active ? '#fff' : CC.ink,
+                  borderRadius: 12, padding: '8px 12px', whiteSpace: 'nowrap', textAlign: 'center', width: '100%',
+                }}>
+                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, lineHeight: 1 }}>{fmtDate(pr.date)}</div>
+                  <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: active ? 'rgba(255,255,255,0.7)' : CC.faint, marginTop: 2 }}>
+                    {WEEKDAYS[new Date(pr.date + 'T12:00').getDay()]}
+                  </div>
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!confirming) { setConfirmDelId(pr.id); return; }
+                      deleteMutation.mutate(pr.id, {
+                        onSuccess: () => { setConfirmDelId(null); setSelectedDate(null); showToast('Práctica eliminada'); },
+                        onError: () => showToast('No se pudo eliminar'),
+                      });
+                    }}
+                    title={confirming ? '¿Seguro? Tocá de nuevo' : 'Eliminar práctica'}
+                    style={{
+                      position: 'absolute', top: -7, right: -7, width: 22, height: 22,
+                      borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: confirming ? CC.bad : 'rgba(224,82,78,0.18)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Icon name="x" size={11} color={confirming ? '#fff' : CC.bad} sw={3} />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>

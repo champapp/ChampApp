@@ -4,6 +4,8 @@ import { latestGymMarks, routinesForPlayer } from '../../lib/domain';
 import { useRoutines, useGymChecks, useGymMarks } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { PlayerRoutines } from './PlayerRoutines';
+import { GymMarksHistory } from './GymMarksHistory';
+import { PlayerGallery } from '../players/PlayerGallery';
 
 export function GymScreen() {
   const { player } = useAuth();
@@ -58,6 +60,14 @@ export function GymScreen() {
       ) : (
         <Card pad={14}><Empty t="Todavía no tenés mediciones cargadas" /></Card>
       )}
+
+      {exercises.length > 0 && (
+        <div style={{ marginTop: 6 }}>
+          <GymMarksHistory gymMarks={gymMarks} player={player} />
+        </div>
+      )}
+
+      <PlayerGallery player={player} isAdmin={false} />
 
       <Toast msg={toast} />
     </div>

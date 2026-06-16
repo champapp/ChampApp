@@ -5,6 +5,7 @@ import { useRealtimeSync } from '../../lib/useRealtimeSync';
 import { useAutoSubscribePush } from '../../lib/push';
 import { AppHeader } from './AppHeader';
 import { BottomNav } from './BottomNav';
+import { NotificationSettingsSheet } from '../../features/settings/NotificationSettingsSheet';
 import { PlayerHome } from '../../features/home/PlayerHome';
 import { AdminHome } from '../../features/home/AdminHome';
 import { AttendanceScreen } from '../../features/attendance/AttendanceScreen';
@@ -78,6 +79,7 @@ export function AppShell() {
   const [deepLink] = useState(readDeepLinkFromUrl);
   const [tab, setTab] = useState(() => (deepLink.tab && screens[deepLink.tab] ? deepLink.tab : 'home'));
   const [alertPlayerId, setAlertPlayerId] = useState(deepLink.playerId ?? null);
+  const [showNotifSettings, setShowNotifSettings] = useState(false);
   const screen = screens[tab] ?? screens.home;
 
   function openPlayerFromAlert(id) {
@@ -123,11 +125,12 @@ export function AppShell() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: CC.paper }}>
-      <AppHeader onOpenAlertPlayer={openPlayerFromAlert} />
+      <AppHeader onOpenAlertPlayer={openPlayerFromAlert} onOpenSettings={() => setShowNotifSettings(true)} />
       <div style={{ flex: 1 }}>
         {content}
       </div>
       <BottomNav tab={tab} setTab={handleSetTab} isAdmin={isAdmin} />
+      {showNotifSettings && <NotificationSettingsSheet onClose={() => setShowNotifSettings(false)} />}
     </div>
   );
 }

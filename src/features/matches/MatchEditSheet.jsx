@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Field, TextInput, SelectInput } from '../../ui';
-import { CATS, HOME_PLACE, PS_DIVS } from '../../lib/domain';
+import { CATS, HOME_PLACE, PS_DIVS, M17_DIVS } from '../../lib/domain';
 import { useUpsertMatch, useDeleteMatch } from '../../lib/queries';
 
 function nextSatISO() {
@@ -49,6 +49,10 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
     cite_primera: match ? (match.cite_primera || '') : '',
     cite_intermedia: match ? (match.cite_intermedia || '') : '',
     cite_preintermedia: match ? (match.cite_preintermedia || '') : '',
+    time_m17: match ? (match.time_m17 || '') : '',
+    cite_m17: match ? (match.cite_m17 || '') : '',
+    time_m16: match ? (match.time_m16 || '') : '',
+    cite_m16: match ? (match.cite_m16 || '') : '',
     comp: match ? match.comp : 'Campeonato Uruguayo',
     cite: match ? (match.cite || '') : '',
   }));
@@ -60,17 +64,22 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
   function save() {
     if (!f.rival.trim()) { toast('Ingresá el rival'); return; }
     const isPS = f.cat === 'PS';
+    const isM17 = f.cat === 'M17';
     const data = {
       id: f.id, cat: f.cat, rival: f.rival.trim(), home: f.home,
       place: f.place.trim() || (f.home ? HOME_PLACE : 'A confirmar'), date: f.date,
-      time: isPS ? null : f.time,
+      time: (isPS || isM17) ? null : f.time,
       time_primera: isPS ? (f.time_primera || null) : null,
       time_intermedia: isPS ? (f.time_intermedia || null) : null,
       time_preintermedia: isPS ? (f.time_preintermedia || null) : null,
       cite_primera: isPS ? (f.cite_primera || null) : null,
       cite_intermedia: isPS ? (f.cite_intermedia || null) : null,
       cite_preintermedia: isPS ? (f.cite_preintermedia || null) : null,
-      comp: f.comp.trim(), cite: isPS ? null : (f.cite || null),
+      time_m17: isM17 ? (f.time_m17 || null) : null,
+      cite_m17: isM17 ? (f.cite_m17 || null) : null,
+      time_m16: isM17 ? (f.time_m16 || null) : null,
+      cite_m16: isM17 ? (f.cite_m16 || null) : null,
+      comp: f.comp.trim(), cite: (isPS || isM17) ? null : (f.cite || null),
     };
     upsert.mutate(data, {
       onSuccess: () => { onClose(); toast(isNew ? 'Partido creado' : 'Partido actualizado'); },
@@ -110,6 +119,26 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
             <Field label="Horarios (Plantel Superior) — completá las divisiones que jueguen">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {PS_DIVS.map((d) => (
+                  <div key={d.key} style={{ border: `1.5px solid ${CC.line}`, borderRadius: 11, padding: '8px 10px' }}>
+                    <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: CC.ink, marginBottom: 6 }}>{d.label}</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, letterSpacing: 0.3, color: CC.muted, marginBottom: 4 }}>Kick off</div>
+                        <TextInput type="time" value={f[d.key]} onChange={(e) => set(d.key, e.target.value)} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, letterSpacing: 0.3, color: CC.muted, marginBottom: 4 }}>Citación</div>
+                        <TextInput type="time" value={f[d.citeKey]} onChange={(e) => set(d.citeKey, e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Field>
+          ) : f.cat === 'M17' ? (
+            <Field label="Horarios (M17) — completá las divisiones que jueguen">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {M17_DIVS.map((d) => (
                   <div key={d.key} style={{ border: `1.5px solid ${CC.line}`, borderRadius: 11, padding: '8px 10px' }}>
                     <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: CC.ink, marginBottom: 6 }}>{d.label}</div>
                     <div style={{ display: 'flex', gap: 8 }}>

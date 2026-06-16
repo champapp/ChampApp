@@ -54,7 +54,7 @@ export function NotificationSettingsSheet({ onClose }) {
           <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(14,58,92,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={18} color={CC.navy} sw={2.4} /></button>
         </div>
 
-        <div style={{ padding: '16px 16px 24px' }}>
+        <div style={{ padding: '16px 16px 0', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 14, padding: '14px 14px', boxShadow: '0 1px 2px rgba(14,34,53,0.04), 0 6px 18px rgba(14,34,53,0.05)' }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 15, color: CC.ink }}>Notificaciones push</div>

@@ -302,6 +302,26 @@ export function latestGymMarks(gymMarks, playerId) {
   return out;
 }
 
+// historial completo de marcas de un jugador, agrupado por ejercicio (de
+// más reciente a más antigua), con la mejor marca de cada uno destacada
+// como RÉCORD: en 'seg' (tiempo) menor es mejor, en el resto mayor es mejor.
+export function gymMarksHistory(gymMarks, playerId) {
+  const byExercise = {};
+  gymMarks
+    .filter((g) => g.player_id === playerId)
+    .forEach((g) => {
+      if (!byExercise[g.exercise]) byExercise[g.exercise] = [];
+      byExercise[g.exercise].push(g);
+    });
+  return Object.entries(byExercise).map(([exercise, marks]) => {
+    const sorted = [...marks].sort((a, b) => b.date.localeCompare(a.date));
+    const unit = sorted[0].unit;
+    const isBetter = unit === 'seg' ? (a, b) => a.value < b.value : (a, b) => a.value > b.value;
+    const best = sorted.reduce((m, x) => (isBetter(x, m) ? x : m), sorted[0]);
+    return { exercise, unit, marks: sorted, best };
+  });
+}
+
 // promedios de un grupo (asistencia a cancha, físico, marcas de gimnasio) para comparativas
 export function categoryAverages({ practices, attendance, players, gymMarks, cat, sub, month = 'all' }) {
   const roster = players.filter((p) => p.cat === cat && (sub == null || p.sub === sub));
@@ -444,6 +464,12 @@ export const PS_DIVS = [
   { key: 'time_preintermedia', citeKey: 'cite_preintermedia', label: 'Pre-Intermedia' },
 ];
 
+// divisiones de M17 y sus columnas de horario en `matches`
+export const M17_DIVS = [
+  { key: 'time_m17', citeKey: 'cite_m17', label: 'M17' },
+  { key: 'time_m16', citeKey: 'cite_m16', label: 'M16' },
+];
+
 // labels de division para jugadores de Plantel Superior (players.division)
 export const PS_DIVISIONS = PS_DIVS.map((d) => d.label);
 
@@ -452,11 +478,20 @@ export function psMatchTimes(m) {
   return PS_DIVS.filter((d) => m[d.key]).map((d) => ({ label: d.label, time: m[d.key], cite: m[d.citeKey] || null }));
 }
 
+// horarios de kick off (y citación) cargados para un partido de M17, por división
+export function m17MatchTimes(m) {
+  return M17_DIVS.filter((d) => m[d.key]).map((d) => ({ label: d.label, time: m[d.key], cite: m[d.citeKey] || null }));
+}
+
 // texto de horario(s) de kick off de un partido, para mostrar en listas/encuestas
 export function matchTimeLabel(m) {
   if (m.cat === 'PS') {
     const times = psMatchTimes(m);
     return times.length ? times.map((t) => t.label + ' ' + t.time).join(' · ') + ' hs' : '';
+  }
+  if (m.cat === 'M17') {
+    const times = m17MatchTimes(m);
+    if (times.length) return times.map((t) => t.label + ' ' + t.time).join(' · ') + ' hs';
   }
   return m.time ? m.time + ' hs' : '';
 }

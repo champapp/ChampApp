@@ -14,7 +14,7 @@ export function AttendanceCalendar({ history }) {
   const gymDates = new Set();
   history.forEach((e) => {
     if (e.type === 'gym') gymDates.add(e.date);
-    else canchaByDate[e.date] = e.status;
+    else canchaByDate[e.date] = { status: e.status, type: e.type };
   });
 
   const monthIds = Array.from(new Set(history.map((e) => e.date.slice(0, 7)))).sort();
@@ -33,10 +33,12 @@ export function AttendanceCalendar({ history }) {
   let pres = 0;
   let abs = 0;
   let gymCount = 0;
+  let matchPres = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${y}-${pad2(mo)}-${pad2(d)}`;
-    const st = canchaByDate[ds];
-    if (st === 'P') pres++; else if (st === 'A') abs++;
+    const cell = canchaByDate[ds];
+    if (cell?.status === 'P') { pres++; if (cell.type === 'match') matchPres++; }
+    else if (cell?.status === 'A') abs++;
     if (gymDates.has(ds)) gymCount++;
   }
 
@@ -60,24 +62,25 @@ export function AttendanceCalendar({ history }) {
         {cells.map((d, i) => {
           if (d == null) return <div key={'e' + i} />;
           const ds = `${y}-${pad2(mo)}-${pad2(d)}`;
-          const st = canchaByDate[ds];
+          const cell = canchaByDate[ds];
           const gym = gymDates.has(ds);
-          const isP = st === 'P';
-          const isA = st === 'A';
-          const gymOnly = gym && !st;
+          const isP = cell?.status === 'P';
+          const isA = cell?.status === 'A';
+          const isMatch = cell?.type === 'match';
+          const gymOnly = gym && !cell;
           return (
             <div key={ds} style={{
               aspectRatio: '1 / 1', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-              background: gymOnly ? CC.gold : isP ? CC.good : isA ? 'rgba(224,82,78,0.12)' : 'transparent',
-              border: isA ? `1.5px solid ${CC.bad}` : (st || gym) ? 'none' : `1px solid ${CC.line}`,
+              background: gymOnly ? CC.gold : isP ? (isMatch ? CC.navy : CC.good) : isA ? 'rgba(224,82,78,0.12)' : 'transparent',
+              border: isA ? `1.5px solid ${CC.bad}` : (cell || gym) ? 'none' : `1px solid ${CC.line}`,
             }}>
               <span style={{
                 fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13,
                 color: gymOnly ? CC.navy900 : isP ? '#fff' : isA ? CC.bad : CC.faint,
               }}>{d}</span>
-              {isP && <span style={{ position: 'absolute', top: 3, right: 4 }}><Icon name="check" size={9} color="rgba(255,255,255,0.85)" sw={3.4} /></span>}
+              {isP && <span style={{ position: 'absolute', top: 3, right: 4 }}><Icon name={isMatch ? 'trophy' : 'check'} size={9} color="rgba(255,255,255,0.85)" sw={3.4} /></span>}
               {gymOnly && <span style={{ position: 'absolute', top: 2, right: 3 }}><Icon name="weight" size={9} color={CC.navy900} sw={3} /></span>}
-              {gym && st && (
+              {gym && cell && (
                 <span style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: CC.gold, border: '1px solid #fff', boxSizing: 'border-box' }} />
               )}
             </div>
@@ -89,6 +92,10 @@ export function AttendanceCalendar({ history }) {
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted }}>
           <span style={{ width: 14, height: 14, borderRadius: 4, background: CC.good, display: 'inline-block' }} />
           <b style={{ color: CC.ink, fontFamily: 'Barlow Condensed, sans-serif', fontSize: 15 }}>{pres}</b> presentes
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted }}>
+          <span style={{ width: 14, height: 14, borderRadius: 4, background: CC.navy, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="trophy" size={9} color="#fff" sw={3} /></span>
+          <b style={{ color: CC.ink, fontFamily: 'Barlow Condensed, sans-serif', fontSize: 15 }}>{matchPres}</b> partidos
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted }}>
           <span style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(224,82,78,0.12)', border: `1.5px solid ${CC.bad}`, boxSizing: 'border-box', display: 'inline-block' }} />
