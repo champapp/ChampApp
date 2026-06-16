@@ -31,7 +31,7 @@ function HomeToggle({ home, onChange }) {
 }
 
 // Autocomplete de canchas de rivales con opción de guardar nueva
-function VenueAutocomplete({ value, mapsUrl, onSelect, onMapsUrlChange }) {
+function VenueAutocomplete({ value, mapsUrl, onSelect, onMapsUrlChange, toast }) {
   const venuesQ = useVenues();
   const upsertVenue = useUpsertVenue();
   const [query, setQuery] = useState(value || '');
@@ -49,7 +49,8 @@ function VenueAutocomplete({ value, mapsUrl, onSelect, onMapsUrlChange }) {
   function saveAndSelect() {
     if (!query.trim() || !mapsUrl.trim()) return;
     upsertVenue.mutate({ name: query.trim(), maps_url: mapsUrl.trim() }, {
-      onSuccess: () => { setOpen(false); onSelect(query.trim(), mapsUrl.trim()); },
+      onSuccess: () => { setOpen(false); onSelect(query.trim(), mapsUrl.trim()); toast?.('Cancha guardada ✓'); },
+      onError: () => toast?.('No se pudo guardar la cancha. Revisá el SQL en Supabase.'),
     });
   }
 
@@ -142,8 +143,11 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
       time_m16: isM17 ? (f.time_m16 || null) : null,
       cite_m16: isM17 ? (f.cite_m16 || null) : null,
       comp: f.comp.trim(), cite: (isPS || isM17) ? null : (f.cite || null),
-      maps_url: (!f.home && f.maps_url.trim()) ? f.maps_url.trim() : null,
     };
+    // Solo mandar maps_url si hay valor (evita error si la columna no existe aún)
+    // o si estamos editando un partido existente (para poder borrarlo)
+    const mapsUrlVal = !f.home && f.maps_url && f.maps_url.trim() ? f.maps_url.trim() : null;
+    if (mapsUrlVal || f.id) data.maps_url = mapsUrlVal;
     upsert.mutate(data, {
       onSuccess: () => { onClose(); toast(isNew ? 'Partido creado' : 'Partido actualizado'); },
       onError: () => toast('No se pudo guardar. Probá de nuevo.'),
@@ -233,6 +237,7 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
                 mapsUrl={f.maps_url}
                 onSelect={(name, url) => setF((s) => ({ ...s, place: name, maps_url: url }))}
                 onMapsUrlChange={(url) => set('maps_url', url)}
+                toast={toast}
               />
             </Field>
           )}
