@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CC, Icon, Avatar, fmtDate } from '../../ui';
 import { usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymChecks } from '../../lib/queries';
 import { playerHistory, consecutiveAbsences, attendanceAlerts } from '../../lib/domain';
@@ -182,7 +183,7 @@ export function AttendanceAlertBell({ onOpenPlayer }) {
           }}>{n}</span>
         )}
       </button>
-      {open && (
+      {open && createPortal(
         <AlarmSheet
           alerts={alerts}
           threshold={settings.threshold}
@@ -192,7 +193,8 @@ export function AttendanceAlertBell({ onOpenPlayer }) {
           onClearContacted={clearContacted}
           onClose={() => setOpen(false)}
           onOpenPlayer={onOpenPlayer}
-        />
+        />,
+        document.body
       )}
     </>
   );
