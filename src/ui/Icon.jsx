@@ -49,6 +49,10 @@ export function Icon({ name, size = 22, color = 'currentColor', sw = 2 }) {
     cake: <><path d="M5 21V13a2 2 0 012-2h10a2 2 0 012 2v8M3 21h18M12 11V8" {...p} /><circle cx="12" cy="5.5" r="1" fill={color} stroke="none" /><path d="M5 16c1.4 1 2.6 1 4 0s2.6-1 4 0 2.6 1 4 0" {...p} /></>,
     archive: <><rect x="3" y="4" width="18" height="4" rx="1" {...p} /><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8" {...p} /><path d="M10 12h4" {...p} /></>,
     restore: <><path d="M3 12a9 9 0 109-9" {...p} /><path d="M3 3v6h6" {...p} /></>,
+    poll: <><path d="M4 20V4" {...p} /><path d="M4 20h16" {...p} /><path d="M8 16V12" {...p} /><path d="M12 16V8" {...p} /><path d="M16 16V10" {...p} /></>,
+    file: <><path d="M14 3H5a1 1 0 00-1 1v16a1 1 0 001 1h14a1 1 0 001-1V8z" {...p} /><path d="M14 3v5h5" {...p} /><path d="M9 12h6M9 16h4" {...p} /></>,
+    chart: <><path d="M3 3v18h18" {...p} /><path d="M7 16l4-5 4 3 4-6" {...p} /></>,
+    bolt: <path d="M13 2L4.5 13H12l-1 9 8.5-11H12z" {...p} />,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block', flexShrink: 0 }}>

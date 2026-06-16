@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CC, Icon, Field, TextInput, SelectInput } from '../../ui';
 import { CATS, HOME_PLACE, PS_DIVS, M17_DIVS } from '../../lib/domain';
-import { useUpsertMatch, useDeleteMatch } from '../../lib/queries';
+import { useUpsertMatch, useDeleteMatch, useVenues, useUpsertVenue } from '../../lib/queries';
 
 function nextSatISO() {
   let d = new Date();
@@ -26,6 +26,67 @@ function HomeToggle({ home, onChange }) {
     <div style={{ display: 'flex', gap: 4, background: 'rgba(14,58,92,0.06)', borderRadius: 13, padding: 4 }}>
       {opt(true, 'Local', 'home')}
       {opt(false, 'Visitante', 'pin')}
+    </div>
+  );
+}
+
+// Autocomplete de canchas de rivales con opción de guardar nueva
+function VenueAutocomplete({ value, mapsUrl, onSelect, onMapsUrlChange }) {
+  const venuesQ = useVenues();
+  const upsertVenue = useUpsertVenue();
+  const [query, setQuery] = useState(value || '');
+  const [open, setOpen] = useState(false);
+  const venues = venuesQ.data || [];
+  const filtered = query.length >= 1 ? venues.filter((v) => v.name.toLowerCase().includes(query.toLowerCase())) : venues;
+  const exactMatch = venues.find((v) => v.name.toLowerCase() === query.toLowerCase());
+
+  function select(v) {
+    setQuery(v.name);
+    setOpen(false);
+    onSelect(v.name, v.maps_url || '');
+  }
+
+  function saveAndSelect() {
+    if (!query.trim() || !mapsUrl.trim()) return;
+    upsertVenue.mutate({ name: query.trim(), maps_url: mapsUrl.trim() }, {
+      onSuccess: () => { setOpen(false); onSelect(query.trim(), mapsUrl.trim()); },
+    });
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <TextInput
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); onSelect(e.target.value, mapsUrl); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="Cancha del rival"
+      />
+      {open && (filtered.length > 0 || (!exactMatch && query.trim())) && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: `1.5px solid ${CC.line}`, borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', zIndex: 10, maxHeight: 200, overflowY: 'auto', marginTop: 4 }}>
+          {filtered.map((v) => (
+            <button key={v.id} onClick={() => select(v)} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '10px 14px', cursor: 'pointer', fontFamily: 'Barlow, sans-serif', fontSize: 14, color: CC.ink, borderBottom: `1px solid ${CC.line}` }}>
+              <div style={{ fontWeight: 600 }}>{v.name}</div>
+              {v.maps_url && <div style={{ fontSize: 11, color: CC.faint, marginTop: 2 }}>📍 Mapa guardado</div>}
+            </button>
+          ))}
+          {!exactMatch && query.trim() && (
+            <button onClick={() => { setOpen(false); onSelect(query.trim(), mapsUrl); }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'rgba(14,58,92,0.04)', padding: '10px 14px', cursor: 'pointer', fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.navy }}>
+              + Usar "{query.trim()}" (nueva cancha)
+            </button>
+          )}
+        </div>
+      )}
+      <div style={{ marginTop: 10 }}>
+        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, letterSpacing: 0.3, color: CC.muted, marginBottom: 4 }}>Link Google Maps (opcional)</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <TextInput value={mapsUrl} onChange={(e) => onMapsUrlChange(e.target.value)} placeholder="https://maps.google.com/..." style={{ flex: 1 }} />
+          {!exactMatch && query.trim() && mapsUrl.trim() && (
+            <button onClick={saveAndSelect} disabled={upsertVenue.isPending} style={{ flexShrink: 0, border: 'none', background: CC.navy, color: '#fff', borderRadius: 9, padding: '0 12px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>
+              Guardar
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -55,10 +116,11 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
     cite_m16: match ? (match.cite_m16 || '') : '',
     comp: match ? match.comp : 'Campeonato Uruguayo',
     cite: match ? (match.cite || '') : '',
+    maps_url: match ? (match.maps_url || '') : '',
   }));
 
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  function setHome(v) { setF((s) => ({ ...s, home: v, place: v ? HOME_PLACE : (s.rival ? 'Cancha de ' + s.rival : s.place) })); }
+  function setHome(v) { setF((s) => ({ ...s, home: v, place: v ? HOME_PLACE : (s.rival ? 'Cancha de ' + s.rival : s.place), maps_url: v ? '' : s.maps_url })); }
   function setRival(v) { setF((s) => ({ ...s, rival: v, place: s.home ? s.place : ('Cancha de ' + v) })); }
 
   function save() {
@@ -80,6 +142,7 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
       time_m16: isM17 ? (f.time_m16 || null) : null,
       cite_m16: isM17 ? (f.cite_m16 || null) : null,
       comp: f.comp.trim(), cite: (isPS || isM17) ? null : (f.cite || null),
+      maps_url: (!f.home && f.maps_url.trim()) ? f.maps_url.trim() : null,
     };
     upsert.mutate(data, {
       onSuccess: () => { onClose(); toast(isNew ? 'Partido creado' : 'Partido actualizado'); },
@@ -161,7 +224,18 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
               <Field label="Citación" half><TextInput type="time" value={f.cite} onChange={(e) => set('cite', e.target.value)} /></Field>
             </div>
           )}
-          <Field label="Lugar / cancha"><TextInput value={f.place} onChange={(e) => set('place', e.target.value)} placeholder="Dónde se juega" /></Field>
+          {f.home ? (
+            <Field label="Lugar / cancha"><TextInput value={f.place} onChange={(e) => set('place', e.target.value)} placeholder="Dónde se juega" /></Field>
+          ) : (
+            <Field label="Cancha del rival">
+              <VenueAutocomplete
+                value={f.place}
+                mapsUrl={f.maps_url}
+                onSelect={(name, url) => setF((s) => ({ ...s, place: name, maps_url: url }))}
+                onMapsUrlChange={(url) => set('maps_url', url)}
+              />
+            </Field>
+          )}
           <Field label="Competencia"><TextInput value={f.comp} onChange={(e) => set('comp', e.target.value)} placeholder="Campeonato Uruguayo" /></Field>
           {!isNew && (
             <button onClick={handleDelete} style={{ border: `1.5px solid ${CC.bad}`, background: confirmDel ? CC.bad : 'rgba(224,82,78,0.06)', color: confirmDel ? '#fff' : CC.bad, padding: '11px', borderRadius: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>

@@ -14,4 +14,5 @@ export { CatBadge } from './CatBadge';
 export { Field, TextInput, SelectInput } from './Form';
 export { BarRow } from './BarRow';
 export { LineChart } from './LineChart';
+export { MiniChart } from './MiniChart';
 export { fmtPct, monthName, fmtDate, matchLongDate, matchLabelShort, daysUntil, rateColor } from './format';

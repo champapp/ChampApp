@@ -42,14 +42,14 @@ export function MatchesScreen() {
 
       {upcoming.length > 0 && <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase', margin: '2px 0 9px' }}>Próximos</div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {upcoming.map((m) => <MatchCard key={m.id} m={m} admin onEdit={(mm) => setEdit({ match: mm })} onRsvp={setRsvpM} />)}
+        {upcoming.map((m) => <MatchCard key={m.id} m={m} admin onEdit={(mm) => setEdit({ match: mm })} onRsvp={setRsvpM} toast={showToast} />)}
       </div>
       {upcoming.length === 0 && <Empty t="Sin partidos próximos para este filtro" />}
 
       {past.length > 0 && (<>
         <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.faint, textTransform: 'uppercase', margin: '20px 0 9px' }}>Jugados</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {past.map((m) => <MatchCard key={m.id} m={m} admin onEdit={(mm) => setEdit({ match: mm })} onRsvp={setRsvpM} />)}
+          {past.map((m) => <MatchCard key={m.id} m={m} admin onEdit={(mm) => setEdit({ match: mm })} onRsvp={setRsvpM} toast={showToast} />)}
         </div>
       </>)}
 

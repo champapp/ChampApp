@@ -7,6 +7,7 @@ import { ProtocolItem } from '../../components/player/ProtocolItem';
 import { FisioAgenda } from './FisioAgenda';
 import { InjuryTreatmentSheet } from './InjuryTreatmentSheet';
 import { NewInjuryPicker } from './NewInjuryPicker';
+import { InjuryStats } from './InjuryStats';
 
 // Fila de un jugador lesionado: diagnóstico, retorno y protocolos (lectura),
 // con acceso al tratamiento completo.
@@ -154,6 +155,7 @@ export function AdminHealthScreen() {
       </Card>
 
       <FisioAgenda mode="admin" injuryByPlayer={injuryByPlayer} onOpenTreatment={openTreatment} toast={showToast} />
+      <InjuryStats />
 
       {picking && (
         <NewInjuryPicker

@@ -8,6 +8,7 @@ import {
 import { useToast } from '../../lib/useToast';
 import { EditPlayerSheet } from './EditPlayerSheet';
 import { PlayerGallery } from './PlayerGallery';
+import { MeasurementsCard } from './MeasurementsCard';
 import { PhysCard } from './PhysCard';
 import { NextMatchCard } from '../matches/NextMatchCard';
 import { PlayerMatchRsvp } from '../matches/PlayerMatchRsvp';
@@ -207,6 +208,7 @@ export function PlayerProfileScreen({ playerId, onBack }) {
       </div>
 
       <div style={{ padding: '0 16px' }}>
+        <MeasurementsCard player={p} admin />
         <PlayerGallery player={p} isAdmin toast={showToast} />
       </div>
 

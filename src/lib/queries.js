@@ -697,3 +697,151 @@ export function useUpsertAdminDoc() {
     onSuccess: (_, { player_id }) => queryClient.invalidateQueries({ queryKey: ['admin_docs', player_id] }),
   });
 }
+
+// ── Marcadores de partido ─────────────────────────────────────
+
+export function useSetMatchScore() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, score_us, score_them }) => {
+      const { error } = await supabase.from('matches').update({ score_us, score_them }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['matches'] }),
+  });
+}
+
+// ── Canchas de rivales ────────────────────────────────────────
+
+export function useVenues() {
+  return useQuery({ queryKey: ['venues'], queryFn: () => selectAll('venues') });
+}
+
+export function useUpsertVenue() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, maps_url }) => {
+      if (id) {
+        const { error } = await supabase.from('venues').update({ name, maps_url }).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('venues').insert({ name, maps_url });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['venues'] }),
+  });
+}
+
+// ── Mediciones físicas por jugador ────────────────────────────
+
+export function usePlayerMeasurements(playerId) {
+  return useQuery({
+    queryKey: ['measurements', playerId],
+    enabled: playerId != null,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('player_measurements').select('*').eq('player_id', playerId).order('date', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useUpsertMeasurement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, player_id, date, peso, talla }) => {
+      const imcVal = (peso && talla) ? (Number(peso) / ((Number(talla) / 100) ** 2)).toFixed(1) : null;
+      const row = { player_id, date, peso: peso || null, talla: talla || null, imc: imcVal };
+      if (id) {
+        const { error } = await supabase.from('player_measurements').update(row).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('player_measurements').insert(row);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, { player_id }) => queryClient.invalidateQueries({ queryKey: ['measurements', player_id] }),
+  });
+}
+
+export function useDeleteMeasurement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }) => {
+      const { error } = await supabase.from('player_measurements').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { player_id }) => queryClient.invalidateQueries({ queryKey: ['measurements', player_id] }),
+  });
+}
+
+// ── Encuestas rápidas ─────────────────────────────────────────
+
+export function usePolls() {
+  return useQuery({ queryKey: ['polls'], queryFn: () => selectAll('polls') });
+}
+
+export function useAllPollVotes() {
+  return useQuery({ queryKey: ['poll_votes'], queryFn: () => selectAll('poll_votes') });
+}
+
+export function useUpsertPoll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, question, options, cats }) => {
+      if (id) {
+        const { error } = await supabase.from('polls').update({ question, options, cats }).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('polls').insert({ question, options, cats });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['polls'] }),
+  });
+}
+
+export function useDeletePoll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('polls').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['polls'] });
+      queryClient.invalidateQueries({ queryKey: ['poll_votes'] });
+    },
+  });
+}
+
+export function useVotePoll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ poll_id, player_id, option_idx }) => {
+      const { error } = await supabase.from('poll_votes')
+        .upsert({ poll_id, player_id, option_idx }, { onConflict: 'poll_id,player_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['poll_votes'] }),
+  });
+}
+
+// ── Adjuntos de comunicados ───────────────────────────────────
+
+export function useUploadMessageFile() {
+  return useMutation({
+    mutationFn: async (file) => {
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('message-files').upload(path, file, {
+        cacheControl: '3600', contentType: file.type || 'application/octet-stream',
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from('message-files').getPublicUrl(path);
+      return { url: data.publicUrl, name: file.name, type: file.type || 'application/octet-stream' };
+    },
+  });
+}

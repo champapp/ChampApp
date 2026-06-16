@@ -47,6 +47,15 @@ export function NextMatchCard({ match: m, player }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
           <Row icon="calendar" label="Cuándo" value={matchLongDate(m.date)} />
           <Row icon="pin" label="Dónde" value={m.place} accent={m.home ? CC.good : CC.gold} />
+          {!m.home && (
+            <a
+              href={m.maps_url || `https://maps.google.com/?q=${encodeURIComponent((m.place || m.rival) + ' Uruguay')}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(249,178,51,0.18)', borderRadius: 8, padding: '6px 10px', textDecoration: 'none', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: CC.gold, letterSpacing: 0.3, alignSelf: 'flex-start' }}
+            >
+              <Icon name="pin" size={13} color={CC.gold} sw={2.3} />Cómo llegar
+            </a>
+          )}
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
           {(m.cat === 'PS' || m.cat === 'M17') && (psTimes.length || m17Times.length)

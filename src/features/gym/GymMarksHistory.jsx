@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CC, Icon, Card, SectionTitle, fmtDate } from '../../ui';
+import { CC, Icon, Card, SectionTitle, fmtDate, MiniChart } from '../../ui';
 import { gymMarksHistory } from '../../lib/domain';
 
 // Historial de marcas por ejercicio: cada tarjeta se puede desplegar para
@@ -32,7 +32,18 @@ export function GymMarksHistory({ gymMarks, player }) {
                 <Icon name={isOpen ? 'chevUp' : 'chevDown'} size={18} color={CC.faint} />
               </button>
               {isOpen && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${CC.line}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${CC.line}` }}>
+                  {marks.length >= 2 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <MiniChart
+                        data={marks.map((m) => ({ date: m.date, value: Number(m.value) }))}
+                        unit={unit}
+                        color={CC.navy}
+                        height={64}
+                      />
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {marks.map((m) => {
                     const isBest = m === best;
                     return (
@@ -51,6 +62,7 @@ export function GymMarksHistory({ gymMarks, player }) {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </Card>
