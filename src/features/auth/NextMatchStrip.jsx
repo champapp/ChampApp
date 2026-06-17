@@ -35,16 +35,14 @@ export function NextMatchStrip() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
       <div style={{
-        display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+        display: 'inline-flex', alignItems: 'center', gap: 0,
         background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 14, padding: '8px 16px', backdropFilter: 'blur(6px)',
+        borderRadius: 999, padding: '7px 14px', backdropFilter: 'blur(6px)',
+        fontFamily: 'Barlow Condensed, sans-serif', fontSize: 13.5, whiteSpace: 'nowrap',
       }}>
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 11, color: CC.gold, letterSpacing: 1, textTransform: 'uppercase' }}>
-          1ª
-        </span>
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 13.5, color: 'rgba(255,255,255,0.88)', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
-          {parts.join(' · ')}
-        </span>
+        <span style={{ fontWeight: 700, color: CC.gold, letterSpacing: 0.3 }}>1ª</span>
+        <span style={{ color: 'rgba(255,255,255,0.35)', margin: '0 5px' }}>·</span>
+        <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.88)', letterSpacing: 0.2 }}>{parts.join(' · ')}</span>
       </div>
     </div>
   );
