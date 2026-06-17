@@ -17,7 +17,7 @@ export function NextMatchStrip() {
     const today = new Date().toISOString().slice(0, 10);
     supabase
       .from('matches')
-      .select('date, time, rival')
+      .select('date, time_primera, rival')
       .eq('cat', 'PS')
       .gte('date', today)
       .order('date', { ascending: true })
@@ -30,7 +30,7 @@ export function NextMatchStrip() {
   if (!match) return null;
 
   const parts = [fmtMatchDate(match.date), `vs ${match.rival}`];
-  if (match.time) parts.push(match.time);
+  if (match.time_primera) parts.push(match.time_primera);
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
