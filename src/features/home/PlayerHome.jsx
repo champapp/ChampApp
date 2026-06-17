@@ -22,6 +22,7 @@ import { NextMatchCard } from '../matches/NextMatchCard';
 import { EditPlayerSheet } from '../players/EditPlayerSheet';
 import { MatchRecord } from '../players/MatchRecord';
 import { StreakCard } from '../../components/player/StreakCard';
+import { ShopOrderBanner } from '../../components/player/ShopOrderBanner';
 
 function HomeLoading() {
   return (
@@ -74,6 +75,7 @@ export function PlayerHome() {
       <BirthdayBanner me={player} players={data.players} />
       <RsvpSurveyCard me={player} onlyIfPending />
       <PlayerAlerts me={player} messages={data.messages} />
+      <ShopOrderBanner playerId={player?.id} />
       {injury && (
         <div style={{ padding: '16px 16px 0' }}>
           <InjuryCard injury={injury} protocols={protocols} />
