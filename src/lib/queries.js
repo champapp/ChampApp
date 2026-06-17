@@ -867,3 +867,113 @@ export function useUploadMessageFile() {
     },
   });
 }
+
+// ── Reservas Champa Shop ─────────────────────────────────────────────
+
+export function useReservations() {
+  return useQuery({
+    queryKey: ['reservations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('*, shop_items(name, photos)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useMyReservations(playerId) {
+  return useQuery({
+    queryKey: ['reservations', 'my', playerId],
+    enabled: !!playerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('*, shop_items(name, photos)')
+        .eq('player_id', playerId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useCreateReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ itemId, playerId, size, quantity, contactName, contactPhone, paymentMethod, notes }) => {
+      const { error } = await supabase.from('reservations').insert({
+        item_id: itemId, player_id: playerId, size, quantity,
+        contact_name: contactName, contact_phone: contactPhone,
+        payment_method: paymentMethod, notes: notes || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] }),
+  });
+}
+
+export function useUpdateReservationStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }) => {
+      const { error } = await supabase.from('reservations').update({ status }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] }),
+  });
+}
+
+export function useDeliverReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reservation, items }) => {
+      const item = items.find((it) => it.id === reservation.item_id);
+      if (item) {
+        const sizes = (item.sizes || []).map((s) =>
+          s.size === reservation.size
+            ? { ...s, stock: Math.max(0, (s.stock || 0) - reservation.quantity) }
+            : s
+        );
+        const { error: stockErr } = await supabase
+          .from('shop_items')
+          .update({ sizes, sold: (item.sold || 0) + reservation.quantity })
+          .eq('id', item.id);
+        if (stockErr) throw stockErr;
+      }
+      const { error } = await supabase.from('reservations').update({ status: 'entregado' }).eq('id', reservation.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['shop_items'] });
+    },
+  });
+}
+
+export function useShopConfig() {
+  return useQuery({
+    queryKey: ['shop_config'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('shop_config').select('*').eq('id', 1).maybeSingle();
+      if (error) throw error;
+      return data || { payment_info: '', pickup_info: '' };
+    },
+  });
+}
+
+export function useUpsertShopConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ paymentInfo, pickupInfo }) => {
+      const { error } = await supabase.from('shop_config').upsert(
+        { id: 1, payment_info: paymentInfo, pickup_info: pickupInfo },
+        { onConflict: 'id' }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shop_config'] }),
+  });
+}

@@ -3,12 +3,15 @@ import { CC, Icon } from '../../ui';
 import { shopCatOf, shopTotalStock } from '../../lib/domain';
 import { useSellShopItem, useRestockShopItem } from '../../lib/queries';
 import { ShopLightbox } from './ShopLightbox';
+import { ReserveSheet } from './ReserveSheet';
 
 // Ficha de un producto: foto grande, descripción, talles y stock.
 // En modo admin permite vender (descontar stock) y reponer.
-export function ShopProductDetail({ item, editing, onEdit, onClose, toast }) {
+// Para jugadores muestra botón "Reservar".
+export function ShopProductDetail({ item, editing, onEdit, onClose, toast, player }) {
   const [bigStart, setBigStart] = useState(null);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [reserving, setReserving] = useState(false);
   const sell = useSellShopItem();
   const restock = useRestockShopItem();
 
@@ -90,8 +93,17 @@ export function ShopProductDetail({ item, editing, onEdit, onClose, toast }) {
             <button onClick={onEdit} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: `1.5px solid ${CC.navy}`, background: 'rgba(14,58,92,0.03)', color: CC.navy, borderRadius: 13, padding: '12px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16 }}><Icon name="edit" size={16} color={CC.navy} sw={2.3} />Editar producto</button>
           </div>
         )}
+        {!editing && player && (
+          <div style={{ padding: '12px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: `1px solid ${CC.line}`, background: '#fff' }}>
+            <button onClick={() => setReserving(true)} disabled={!totalStock} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: 'none', background: totalStock ? CC.gold : 'rgba(14,58,92,0.08)', color: totalStock ? CC.navy900 : CC.faint, borderRadius: 13, padding: '13px', cursor: totalStock ? 'pointer' : 'default', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17 }}>
+              <Icon name="bag" size={18} color={totalStock ? CC.navy900 : CC.faint} sw={2.4} />
+              {totalStock ? 'Reservar' : 'Sin stock disponible'}
+            </button>
+          </div>
+        )}
       </div>
       {bigStart != null && <ShopLightbox photos={photos} start={bigStart} onClose={() => setBigStart(null)} />}
+      {reserving && <ReserveSheet item={item} player={player} onClose={() => setReserving(false)} toast={toast} />}
     </div>
   );
 }

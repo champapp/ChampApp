@@ -7,6 +7,8 @@ import { ShopCard } from './ShopCard';
 import { ShopProductDetail } from './ShopProductDetail';
 import { ShopItemEditor } from './ShopItemEditor';
 import { ShopQuickStock } from './ShopQuickStock';
+import { AdminOrdersSheet } from './AdminOrdersSheet';
+import { MyOrdersSheet } from './MyOrdersSheet';
 
 function pillBtn(active) {
   return {
@@ -18,8 +20,8 @@ function pillBtn(active) {
 }
 
 // Catálogo de la Champa Shop. En modo admin permite administrar productos,
-// vender y reponer stock.
-export function ShopScreen({ isAdmin }) {
+// vender y reponer stock. Para jugadores permite reservar y ver sus pedidos.
+export function ShopScreen({ isAdmin, player }) {
   const [toast, showToast] = useToast();
   const itemsQ = useShopItems();
   const del = useDeleteShopItem();
@@ -29,6 +31,8 @@ export function ShopScreen({ isAdmin }) {
   const [detailId, setDetailId] = useState(null);
   const [quickStock, setQuickStock] = useState(false);
   const [catF, setCatF] = useState('all');
+  const [adminOrders, setAdminOrders] = useState(false);
+  const [myOrders, setMyOrders] = useState(false);
 
   if (itemsQ.isLoading) {
     return <div style={{ padding: '40px 16px', textAlign: 'center', fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>;
@@ -117,13 +121,21 @@ export function ShopScreen({ isAdmin }) {
           {isAdmin && (
             <div style={{ marginTop: 13 }}>
               {!editing ? (
-                <button onClick={() => setEditing(true)} style={pillBtn(false)}>
-                  <Icon name="edit" size={14} color={CC.gold} sw={2.2} />Administrar productos
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button onClick={() => setEditing(true)} style={pillBtn(false)}>
+                    <Icon name="edit" size={14} color={CC.gold} sw={2.2} />Administrar productos
+                  </button>
+                  <button onClick={() => setAdminOrders(true)} style={pillBtn(false)}>
+                    <Icon name="bag" size={14} color={CC.gold} sw={2.2} />Pedidos
+                  </button>
+                </div>
               ) : (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button onClick={() => setQuickStock(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: CC.gold, color: CC.navy900, borderRadius: 11, padding: '8px 14px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5, letterSpacing: 0.3 }}>
                     <Icon name="bag" size={15} color={CC.navy900} sw={2.4} />Venta rápida
+                  </button>
+                  <button onClick={() => setAdminOrders(true)} style={pillBtn(true)}>
+                    <Icon name="bag" size={15} color="#fff" sw={2.4} />Pedidos
                   </button>
                   <button onClick={() => setBuilder(true)} style={pillBtn(true)}>
                     <Icon name="plus" size={15} color="#fff" sw={2.6} />Nuevo
@@ -131,6 +143,13 @@ export function ShopScreen({ isAdmin }) {
                   <button onClick={() => setEditing(false)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1.5px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', borderRadius: 11, padding: '8px 14px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}>Listo</button>
                 </div>
               )}
+            </div>
+          )}
+          {!isAdmin && player && (
+            <div style={{ marginTop: 13 }}>
+              <button onClick={() => setMyOrders(true)} style={pillBtn(false)}>
+                <Icon name="bag" size={14} color={CC.gold} sw={2.2} />Mis pedidos
+              </button>
             </div>
           )}
           {canEdit && <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 9 }}>"Venta rápida" mueve el stock al instante. Tocá un producto para editarlo.</div>}
@@ -151,10 +170,13 @@ export function ShopScreen({ isAdmin }) {
           item={detailItem} editing={canEdit}
           onEdit={() => { setDetailId(null); setBuilder({ item: detailItem }); }}
           onClose={() => setDetailId(null)} toast={showToast}
+          player={!isAdmin ? player : undefined}
         />
       )}
       {quickStock && <ShopQuickStock items={items} onClose={() => setQuickStock(false)} toast={showToast} />}
       {builder && <ShopItemEditor item={builder.item} items={items} onClose={() => setBuilder(null)} toast={showToast} />}
+      {adminOrders && <AdminOrdersSheet onClose={() => setAdminOrders(false)} toast={showToast} />}
+      {myOrders && player && <MyOrdersSheet player={player} onClose={() => setMyOrders(false)} />}
       <Toast msg={toast} />
     </div>
   );

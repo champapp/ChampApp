@@ -20,10 +20,31 @@ function ExportLoading() {
 
 // Exportes a CSV (Excel / Google Sheets) para el admin: asistencia,
 // ranking, mediciones de gimnasio e historial de lesiones.
+function pdfMonthOptions() {
+  const today = todayISO();
+  const [y, m] = today.slice(0, 7).split('-').map(Number);
+  const NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const opts = [];
+  for (let i = 23; i >= 0; i--) {
+    let mm = m - i; let yy = y;
+    while (mm <= 0) { mm += 12; yy -= 1; }
+    const val = `${yy}-${String(mm).padStart(2, '0')}`;
+    opts.push({ value: val, label: `${NAMES[mm - 1]} ${yy}` });
+  }
+  return opts;
+}
+
 export function ExportScreen() {
   const [toast, showToast] = useToast();
   const [month, setMonth] = useState('all');
   const [catId, setCatId] = useState('all');
+  const today0 = todayISO().slice(0, 7);
+  const [pdfFrom, setPdfFrom] = useState(() => {
+    const t = todayISO(); const [y, m] = t.slice(0, 7).split('-').map(Number);
+    let mm = m - 2; let yy = y; while (mm <= 0) { mm += 12; yy -= 1; }
+    return `${yy}-${String(mm).padStart(2, '0')}`;
+  });
+  const [pdfTo, setPdfTo] = useState(today0);
 
   const playersQ = usePlayers();
   const practicesQ = usePractices();
@@ -97,15 +118,15 @@ export function ExportScreen() {
   function expAttendancePDF() {
     const today = todayISO();
     const catList = catId === 'all' ? CATS.map((c) => c.id) : [catId];
+    const fromDate = pdfFrom + '-01';
+    const toDate = pdfTo + '-31';
 
     const sections = catList.map((cat) => {
       const catPlayers = players.filter((p) => p.cat === cat).sort((a, b) => a.name.localeCompare(b.name));
       if (!catPlayers.length) return null;
       const catPractices = practices
-        .filter((pr) => pr.cat === cat && pr.date <= today)
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 8)
-        .reverse();
+        .filter((pr) => pr.cat === cat && pr.date >= fromDate && pr.date <= toDate)
+        .sort((a, b) => a.date.localeCompare(b.date));
       const presenceMap = new Map();
       attendance.forEach((a) => presenceMap.set(`${a.player_id}_${a.practice_id}`, a.status));
       const rows = catPlayers.map((player) => {
@@ -168,7 +189,7 @@ ${sections.map(({ cat, catPractices, rows }) => `
       }).join('')}
     </tbody>
   </table>
-  <footer>${rows.length} jugador${rows.length !== 1 ? 'es' : ''} · últimas ${catPractices.length} práctica${catPractices.length !== 1 ? 's' : ''}</footer>
+  <footer>${rows.length} jugador${rows.length !== 1 ? 'es' : ''} · ${catPractices.length} práctica${catPractices.length !== 1 ? 's' : ''} · período ${pdfFrom} / ${pdfTo}</footer>
 </div>`).join('')}
 </body></html>`;
 
@@ -212,8 +233,31 @@ ${sections.map(({ cat, catPractices, rows }) => `
     showToast('CSV de lesiones descargado');
   }
 
+  const pdfMonthOpts = pdfMonthOptions();
+  const selStyle = { border: `1.5px solid ${CC.line}`, borderRadius: 10, padding: '8px 10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: CC.ink, background: '#fff', cursor: 'pointer', flex: 1 };
+
   const cards = [
-    { t: 'Planilla de asistencia PDF', d: 'Una página por categoría con las últimas 8 prácticas. Guardá como PDF desde el diálogo de impresión.', icon: 'download', fn: expAttendancePDF, highlight: true },
+    {
+      t: 'Planilla de asistencia PDF',
+      d: 'Una página por categoría. Elegí el período y guardá como PDF desde el diálogo de impresión.',
+      icon: 'download', fn: expAttendancePDF, highlight: true,
+      extra: (
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>Desde</div>
+            <select value={pdfFrom} onChange={(e) => setPdfFrom(e.target.value)} style={selStyle}>
+              {pdfMonthOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>Hasta</div>
+            <select value={pdfTo} onChange={(e) => setPdfTo(e.target.value)} style={selStyle}>
+              {pdfMonthOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+        </div>
+      ),
+    },
     { t: 'Asistencia por jugador', d: 'Una fila por jugador con su % de asistencia.', icon: 'players', fn: expPlayers },
     { t: 'Asistencia por categoría', d: 'Resumen agregado por categoría.', icon: 'whistle', fn: expCats },
     { t: 'Ranking de asistencia', d: 'Orden de menor a mayor, por categoría.', icon: 'trophy', fn: expRanking },
@@ -243,15 +287,18 @@ ${sections.map(({ cat, catPractices, rows }) => `
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {cards.map((c) => (
-          <Card key={c.t} pad={14} onClick={c.fn} style={{ display: 'flex', alignItems: 'center', gap: 13, border: c.highlight ? `1.5px solid ${CC.gold}` : undefined }}>
-            <div style={{ width: 42, height: 42, borderRadius: 11, background: c.highlight ? CC.gold : CC.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Icon name={c.icon} size={22} color={c.highlight ? CC.navy900 : CC.gold} />
+          <Card key={c.t} pad={14} onClick={c.extra ? undefined : c.fn} style={{ border: c.highlight ? `1.5px solid ${CC.gold}` : undefined }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13, cursor: c.extra ? 'default' : 'pointer' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 11, background: c.highlight ? CC.gold : CC.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name={c.icon} size={22} color={c.highlight ? CC.navy900 : CC.gold} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.ink, letterSpacing: 0.3 }}>{c.t}</div>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, marginTop: 1 }}>{c.d}</div>
+              </div>
+              <div style={{ color: CC.gold, cursor: 'pointer' }} onClick={c.extra ? c.fn : undefined}><Icon name="download" size={22} sw={2.2} /></div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.ink, letterSpacing: 0.3 }}>{c.t}</div>
-              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, marginTop: 1 }}>{c.d}</div>
-            </div>
-            <div style={{ color: CC.gold }}><Icon name="download" size={22} sw={2.2} /></div>
+            {c.extra}
           </Card>
         ))}
       </div>

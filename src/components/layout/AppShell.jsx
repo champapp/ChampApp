@@ -71,7 +71,7 @@ function PlaceholderScreen({ title, icon }) {
 }
 
 export function AppShell() {
-  const { role } = useAuth();
+  const { role, player } = useAuth();
   useRealtimeSync();
   useAutoSubscribePush();
   const isAdmin = role === 'admin';
@@ -116,7 +116,7 @@ export function AppShell() {
   } else if (isAdmin && tab === 'health') {
     content = <AdminHealthScreen />;
   } else if (tab === 'shop') {
-    content = <ShopScreen isAdmin={isAdmin} />;
+    content = <ShopScreen isAdmin={isAdmin} player={!isAdmin ? player : undefined} />;
   } else if (isAdmin && tab === 'export') {
     content = <ExportScreen />;
   } else {
