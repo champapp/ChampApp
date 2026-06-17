@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import { CC, Icon } from '../../ui';
+import { CC } from '../../ui';
 import { supabase } from '../../lib/supabaseClient';
 
 const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const SHORT_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 function fmtMatchDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   const day = new Date(y, m - 1, d).getDay();
-  return `${SHORT_DAYS[day]} ${d} ${SHORT_MONTHS[m - 1]}`;
+  return `${SHORT_DAYS[day]} ${d}/${m}`;
 }
 
 export function NextMatchStrip() {
@@ -30,29 +29,22 @@ export function NextMatchStrip() {
 
   if (!match) return null;
 
+  const parts = [fmtMatchDate(match.date), `vs ${match.rival}`];
+  if (match.time) parts.push(match.time);
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
       <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7,
+        display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2,
         background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 999, padding: '7px 14px', backdropFilter: 'blur(6px)',
+        borderRadius: 14, padding: '8px 16px', backdropFilter: 'blur(6px)',
       }}>
-        <Icon name="whistle" size={13} color={CC.gold} sw={2.2} />
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, color: 'rgba(255,255,255,0.9)', letterSpacing: 0.3 }}>
-          {fmtMatchDate(match.date)}
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 11, color: CC.gold, letterSpacing: 1, textTransform: 'uppercase' }}>
+          1ª
         </span>
-        <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, color: CC.gold, letterSpacing: 0.2 }}>
-          vs {match.rival}
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 13.5, color: 'rgba(255,255,255,0.88)', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
+          {parts.join(' · ')}
         </span>
-        {match.time && (
-          <>
-            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-            <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
-              {match.time}
-            </span>
-          </>
-        )}
       </div>
     </div>
   );
