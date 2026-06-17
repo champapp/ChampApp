@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { CC, Icon, fmtDate } from '../../ui';
 import { activeMessagesFor, playerMatchesCatToken } from '../../lib/domain';
-import { usePolls, useAllPollVotes } from '../../lib/queries';
+import { usePolls, useAllPollVotes, useMarkMessageRead } from '../../lib/queries';
 import { PlayerPollCard } from '../../features/messages/PlayerPollCard';
 
 // Comunicados del club activos para el jugador (en su perfil/inicio).
@@ -8,6 +9,14 @@ export function PlayerAlerts({ me, messages, pad = true }) {
   const msgs = activeMessagesFor({ messages, player: me });
   const pollsQ = usePolls();
   const votesQ = useAllPollVotes();
+  const markRead = useMarkMessageRead();
+
+  // Marca todos los comunicados visibles como leídos al montarse
+  const msgIds = msgs.map((m) => m.id).join(',');
+  useEffect(() => {
+    if (!me?.id || !msgs.length) return;
+    msgs.forEach((m) => markRead.mutate({ messageId: m.id, playerId: me.id }));
+  }, [msgIds, me?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const polls = (pollsQ.data || []).filter((p) => {
     if (!p.cats || p.cats.length === 0) return true;

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Ring, Empty, Toast, fmtPct, fmtDate, rateColor } from '../../ui';
 import { InjuryBadge } from '../../components/player/InjuryBadge';
-import { ageFromBirth, playerAttendance, nextMatch, latestGymMarks } from '../../lib/domain';
+import { StreakCard } from '../../components/player/StreakCard';
+import { ageFromBirth, playerAttendance, nextMatch, latestGymMarks, playerHistory } from '../../lib/domain';
 import {
   usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymChecks, useGymMarks, usePlayerInjury, useUpdatePlayer, useAdminDocs, usePlayerPin,
 } from '../../lib/queries';
@@ -70,6 +71,7 @@ export function PlayerProfileScreen({ playerId, onBack }) {
     practices: practicesQ.data ?? [], attendance: attendanceQ.data ?? [],
     matches: matchesQ.data ?? [], rsvp: rsvpQ.data ?? [], gymChecks: gymChecksQ.data ?? [], player: p,
   });
+  const history = playerHistory({ practices: practicesQ.data ?? [], attendance: attendanceQ.data ?? [], matches: matchesQ.data ?? [], rsvp: rsvpQ.data ?? [], gymChecks: gymChecksQ.data ?? [], player: p });
   const next = nextMatch({ matches: matchesQ.data ?? [], cat: p.cat, sub: p.sub });
   const age = ageFromBirth(p);
   const view = editPhys && phys ? phys : { peso: p.peso, talla: p.talla };
@@ -141,6 +143,9 @@ export function PlayerProfileScreen({ playerId, onBack }) {
 
         {/* récord de partidos */}
         <MatchRecord player={p} matches={matchesQ.data ?? []} />
+
+        {/* racha de asistencia */}
+        <StreakCard history={history} />
 
         {/* asistencia */}
         <Card pad={14} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>

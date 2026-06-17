@@ -6,7 +6,7 @@ import {
   usePlayerInjury, useInjuryProtocols, useFisioBookings, useMessages, useAdminDocs,
 } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
-import { protocolsForInjury } from '../../lib/domain';
+import { protocolsForInjury, playerHistory } from '../../lib/domain';
 import { computeMyData } from './myData';
 import { buildFeedWidgets } from './widgets';
 import { HeaderHero } from './HeaderHero';
@@ -21,6 +21,7 @@ import { PlayerLineups } from '../matches/lineups/PlayerLineups';
 import { NextMatchCard } from '../matches/NextMatchCard';
 import { EditPlayerSheet } from '../players/EditPlayerSheet';
 import { MatchRecord } from '../players/MatchRecord';
+import { StreakCard } from '../../components/player/StreakCard';
 
 function HomeLoading() {
   return (
@@ -65,6 +66,7 @@ export function PlayerHome() {
   const widgets = buildFeedWidgets(player, d);
   const injury = injuryQ.data;
   const protocols = injury ? protocolsForInjury(protocolsQ.data ?? [], injury.id) : [];
+  const history = playerHistory({ practices: data.practices, attendance: data.attendance, matches: data.matches, rsvp: data.rsvp, gymChecks: data.gymChecks, player });
 
   return (
     <div style={{ paddingBottom: 16 }}>
@@ -87,6 +89,7 @@ export function PlayerHome() {
       )}
       <div style={{ padding: '16px 16px 0' }}>
         <MatchRecord player={player} matches={data.matches} />
+        <StreakCard history={history} />
         <FeedBoard storageKey={'champ_feed_' + player.id} widgets={widgets} title="Personalizar mi feed" />
       </div>
       {editing && (

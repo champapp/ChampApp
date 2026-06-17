@@ -829,6 +829,28 @@ export function useVotePoll() {
   });
 }
 
+// ── Acuse de lectura de comunicados ──────────────────────────
+
+export function useAllMessageReads() {
+  return useQuery({
+    queryKey: ['message_reads'],
+    queryFn: () => selectAll('message_reads'),
+  });
+}
+
+export function useMarkMessageRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ messageId, playerId }) => {
+      const { error } = await supabase
+        .from('message_reads')
+        .upsert({ message_id: messageId, player_id: playerId }, { onConflict: 'message_id,player_id', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['message_reads'] }),
+  });
+}
+
 // ── Adjuntos de comunicados ───────────────────────────────────
 
 export function useUploadMessageFile() {

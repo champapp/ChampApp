@@ -15,6 +15,7 @@ const REALTIME_TABLES = [
   { table: 'matches', queryKey: ['matches'] },
   { table: 'polls', queryKey: ['polls'] },
   { table: 'poll_votes', queryKey: ['poll_votes'] },
+  { table: 'message_reads', queryKey: ['message_reads'] },
 ];
 
 // Suscribe un canal de Supabase Realtime a las tablas de REALTIME_TABLES

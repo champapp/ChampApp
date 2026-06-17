@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { CC, Icon, Card, Chip, fmtDate } from '../../ui';
 import { CATS, messageStatus, PS_DIVISIONS, catTokenLabel } from '../../lib/domain';
-import { useMessages, usePlayers, useUpsertMessage, useDeleteMessage, useUploadMessageFile, usePolls, useUpsertPoll, useDeletePoll, useAllPollVotes } from '../../lib/queries';
+import { useMessages, usePlayers, useUpsertMessage, useDeleteMessage, useUploadMessageFile, usePolls, useUpsertPoll, useDeletePoll, useAllPollVotes, useAllMessageReads } from '../../lib/queries';
+import { playerMatchesCatToken } from '../../lib/domain';
 
 const STATUS_COLORS = { activo: CC.good, programado: CC.gold, finalizado: CC.faint };
 
@@ -148,6 +149,7 @@ export function AdminMessages({ toast }) {
   const fileRef = useRef(null);
   const messagesQ = useMessages();
   const playersQ = usePlayers();
+  const readsQ = useAllMessageReads();
   const upsert = useUpsertMessage();
   const del = useDeleteMessage();
   const uploadFile = useUploadMessageFile();
@@ -158,9 +160,19 @@ export function AdminMessages({ toast }) {
 
   const players = playersQ.data ?? [];
   const msgs = (messagesQ.data ?? []).slice().sort((a, b) => (b.start_date || '').localeCompare(a.start_date || ''));
+  const reads = readsQ.data ?? [];
   const activeN = msgs.filter((m) => messageStatus(m) === 'activo').length;
   const activeCats = CATS.filter((c) => players.some((p) => p.cat === c.id));
   const psDivisions = PS_DIVISIONS.filter((d) => players.some((p) => p.cat === 'PS' && p.division === d));
+
+  function audienceCount(m) {
+    const a = m.cats || { type: 'all' };
+    if (a.type === 'all') return players.length;
+    if (a.type === 'cat') return players.filter((p) => p.cat === a.cat).length;
+    if (a.type === 'cats') return players.filter((p) => (a.cats || []).some((t) => playerMatchesCatToken(p, t))).length;
+    if (a.type === 'player') return 1;
+    return players.length;
+  }
 
   function startNew() { setDraft(blankDraft()); setOpen(true); }
   function edit(m) {
@@ -296,6 +308,8 @@ export function AdminMessages({ toast }) {
               const st = messageStatus(m);
               const a = m.cats || { type: 'all' };
               const audLabel = a.type === 'cats' ? (a.cats || []).map(catTokenLabel).join(' · ') : (a.type === 'cat' ? a.cat : 'Todo el club');
+              const readCount = reads.filter((r) => r.message_id === m.id).length;
+              const audTotal = audienceCount(m);
               return (
                 <div key={m.id} style={{ border: `1px solid ${CC.line}`, borderRadius: 12, padding: '11px 12px', background: '#fff' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -313,6 +327,12 @@ export function AdminMessages({ toast }) {
                     <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, color: CC.faint }}>
                       {audLabel}{m.start_date ? ' · ' + fmtDate(m.start_date) : ''}{m.end_date ? ' → ' + fmtDate(m.end_date) : ''}
                     </span>
+                    {audTotal > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: readCount === audTotal ? 'rgba(30,158,106,0.1)' : 'rgba(14,58,92,0.06)', borderRadius: 6, padding: '2px 7px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12, color: readCount === audTotal ? CC.good : CC.muted, flexShrink: 0 }}>
+                        <Icon name="check" size={10} color={readCount === audTotal ? CC.good : CC.muted} sw={2.8} />
+                        {readCount}/{audTotal}
+                      </span>
+                    )}
                     <div style={{ flex: 1 }} />
                     <button onClick={() => edit(m)} style={msgIconBtn()}><Icon name="edit" size={14} color={CC.navy} sw={2.3} /></button>
                     <button onClick={() => remove(m.id)} style={msgIconBtn()}><Icon name="x" size={15} color={CC.bad} sw={2.5} /></button>

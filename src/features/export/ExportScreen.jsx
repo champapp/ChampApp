@@ -94,6 +94,93 @@ export function ExportScreen() {
     showToast('CSV de mediciones descargado');
   }
 
+  function expAttendancePDF() {
+    const today = todayISO();
+    const catList = catId === 'all' ? CATS.map((c) => c.id) : [catId];
+
+    const sections = catList.map((cat) => {
+      const catPlayers = players.filter((p) => p.cat === cat).sort((a, b) => a.name.localeCompare(b.name));
+      if (!catPlayers.length) return null;
+      const catPractices = practices
+        .filter((pr) => pr.cat === cat && pr.date <= today)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 8)
+        .reverse();
+      const presenceMap = new Map();
+      attendance.forEach((a) => presenceMap.set(`${a.player_id}_${a.practice_id}`, a.status));
+      const rows = catPlayers.map((player) => {
+        const att = playerAttendance({ practices, attendance, matches, rsvp, player });
+        const checks = catPractices.map((pr) => presenceMap.get(`${player.id}_${pr.id}`) || '');
+        return { name: player.name, rate: Math.round((att.rate || 0) * 100), checks };
+      });
+      return { cat, catPractices, rows };
+    }).filter(Boolean);
+
+    if (!sections.length) { showToast('Sin jugadores para exportar'); return; }
+
+    const fmtD = (iso) => { const [y, m, d] = iso.split('-'); return `${d}/${m}`; };
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Planilla de Asistencia · Champagnat Rugby</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 15mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 9px; color: #222; }
+  .section { page-break-after: always; padding-bottom: 8px; }
+  .section:last-child { page-break-after: avoid; }
+  .header { background: #07243d; color: #fff; padding: 7px 10px; border-radius: 5px 5px 0 0; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+  .header h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+  .header span { font-size: 9px; opacity: 0.7; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0e3a5c; color: #fff; padding: 5px 5px; text-align: left; font-size: 8.5px; font-weight: 700; border: 1px solid #07243d; }
+  th.center { text-align: center; }
+  td { border: 1px solid #d0d8e0; padding: 4px 5px; font-size: 9px; }
+  tr:nth-child(even) td { background: #f5f8fa; }
+  .p { color: #1e9e6a; font-weight: 700; text-align: center; }
+  .a { color: #e0524e; font-weight: 700; text-align: center; }
+  .nd { color: #bbb; text-align: center; }
+  .rate { font-weight: 700; text-align: right; }
+  .rate-good { color: #1e9e6a; }
+  .rate-med { color: #d97706; }
+  .rate-bad { color: #e0524e; }
+  footer { font-size: 7.5px; color: #999; margin-top: 5px; text-align: right; }
+</style>
+</head><body>
+${sections.map(({ cat, catPractices, rows }) => `
+<div class="section">
+  <div class="header">
+    <h2>Champagnat Rugby · ${cat} · Planilla de Asistencia</h2>
+    <span>Exportado ${today}</span>
+  </div>
+  <table>
+    <thead><tr>
+      <th style="min-width:150px">Jugador</th>
+      <th class="center" style="min-width:42px">%</th>
+      ${catPractices.map((pr) => `<th class="center" style="min-width:30px">${fmtD(pr.date)}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+      ${rows.map(({ name, rate, checks }) => {
+        const rc = rate >= 75 ? 'rate-good' : rate >= 50 ? 'rate-med' : 'rate-bad';
+        return `<tr>
+          <td>${name}</td>
+          <td class="rate ${rc}">${rate}%</td>
+          ${checks.map((c) => c === 'P' ? '<td class="p">✓</td>' : c === 'A' ? '<td class="a">✗</td>' : '<td class="nd">—</td>').join('')}
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  <footer>${rows.length} jugador${rows.length !== 1 ? 'es' : ''} · últimas ${catPractices.length} práctica${catPractices.length !== 1 ? 's' : ''}</footer>
+</div>`).join('')}
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) { showToast('Habilitá las ventanas emergentes para exportar'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+    showToast('Planilla generada — guardá como PDF desde el diálogo de impresión');
+  }
+
   function expInjuries() {
     const rows = [['Jugador', 'Categoría', 'Estado', 'Fecha de consulta', 'Diagnóstico', 'Protocolos', 'Fecha de retorno', 'Días restantes', 'Consultas fisio']];
     const protoTxt = (injuryId) => protocolsForInjury(protocols, injuryId)
@@ -126,6 +213,7 @@ export function ExportScreen() {
   }
 
   const cards = [
+    { t: 'Planilla de asistencia PDF', d: 'Una página por categoría con las últimas 8 prácticas. Guardá como PDF desde el diálogo de impresión.', icon: 'download', fn: expAttendancePDF, highlight: true },
     { t: 'Asistencia por jugador', d: 'Una fila por jugador con su % de asistencia.', icon: 'players', fn: expPlayers },
     { t: 'Asistencia por categoría', d: 'Resumen agregado por categoría.', icon: 'whistle', fn: expCats },
     { t: 'Ranking de asistencia', d: 'Orden de menor a mayor, por categoría.', icon: 'trophy', fn: expRanking },
@@ -155,8 +243,10 @@ export function ExportScreen() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {cards.map((c) => (
-          <Card key={c.t} pad={14} onClick={c.fn} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 11, background: CC.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: CC.gold }}><Icon name={c.icon} size={22} /></div>
+          <Card key={c.t} pad={14} onClick={c.fn} style={{ display: 'flex', alignItems: 'center', gap: 13, border: c.highlight ? `1.5px solid ${CC.gold}` : undefined }}>
+            <div style={{ width: 42, height: 42, borderRadius: 11, background: c.highlight ? CC.gold : CC.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Icon name={c.icon} size={22} color={c.highlight ? CC.navy900 : CC.gold} />
+            </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.ink, letterSpacing: 0.3 }}>{c.t}</div>
               <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, marginTop: 1 }}>{c.d}</div>
