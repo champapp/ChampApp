@@ -23,12 +23,13 @@ function NextMatchStrip() {
       .from('matches')
       .select('date, time, rival, sub')
       .eq('cat', 'PS')
-      .eq('sub', 'Primera')
       .gte('date', today)
       .order('date', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setMatch(data); });
+      .limit(10)
+      .then(({ data }) => {
+        const m = (data || []).find((r) => !r.sub || r.sub === 'Primera');
+        if (m) setMatch(m);
+      });
   }, []);
 
   if (!match) return null;
