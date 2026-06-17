@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Chip, Empty } from '../../ui';
-import { useReservations, useShopItems, useUpdateReservationStatus, useDeliverReservation, useShopConfig, useUpsertShopConfig } from '../../lib/queries';
+import { useReservations, useShopItems, useUpdateReservationStatus, useDeliverReservation, useCancelReservation, useShopConfig, useUpsertShopConfig } from '../../lib/queries';
 
 const STATUS_STYLE = {
   pendiente: { bg: 'rgba(249,178,51,0.15)', color: '#a06a00', label: 'Pendiente' },
@@ -97,6 +97,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
   const itemsQ = useShopItems();
   const updateStatus = useUpdateReservationStatus();
   const deliver = useDeliverReservation();
+  const cancelRes = useCancelReservation();
   const [filter, setFilter] = useState('pendiente');
 
   const reservations = resQ.data ?? [];
@@ -112,14 +113,14 @@ export function AdminOrdersSheet({ onClose, toast }) {
 
   function markDelivered(r) {
     deliver.mutate({ reservation: r, items }, {
-      onSuccess: () => toast?.('Entregado · stock descontado'),
+      onSuccess: () => toast?.('Entregado'),
       onError: () => toast?.('Error al entregar'),
     });
   }
 
   function cancel(r) {
-    updateStatus.mutate({ id: r.id, status: 'cancelado' }, {
-      onSuccess: () => toast?.('Reserva cancelada'),
+    cancelRes.mutate({ reservation: r, items }, {
+      onSuccess: () => toast?.('Reserva cancelada · stock restaurado'),
       onError: () => toast?.('Error al cancelar'),
     });
   }

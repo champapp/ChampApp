@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { CC, Icon } from '../../ui';
-import { useCreateReservation } from '../../lib/queries';
+import { useCreateReservation, useShopConfig } from '../../lib/queries';
 
-const PAYMENT_METHODS = [
-  { id: 'transferencia', label: 'Transferencia', sub: 'Te mandamos los datos al confirmar' },
-  { id: 'efectivo', label: 'Efectivo al retirar', sub: 'Pagás cuando retirás el producto' },
-];
+const DEFAULT_PAYMENT_INFO = 'Scotiabank\nCaja de ahorro en $\n2504805900\nBruno Incert';
+const DEFAULT_PICKUP_INFO = 'Retiro en la sede del club de lunes a viernes de 18:30 a 20:30 hs.';
 
 export function ReserveSheet({ item, player, onClose, toast }) {
   const sizes = (item.sizes || []).filter((s) => s.stock > 0);
@@ -17,6 +15,9 @@ export function ReserveSheet({ item, player, onClose, toast }) {
   const [done, setDone] = useState(false);
 
   const createRes = useCreateReservation();
+  const configQ = useShopConfig();
+  const paymentInfo = configQ.data?.payment_info || DEFAULT_PAYMENT_INFO;
+  const pickupInfo = configQ.data?.pickup_info || DEFAULT_PICKUP_INFO;
 
   const selectedSize = (item.sizes || []).find((s) => s.size === size);
   const maxQty = selectedSize ? selectedSize.stock : 99;
@@ -25,7 +26,7 @@ export function ReserveSheet({ item, player, onClose, toast }) {
     if (!size) { toast?.('Elegí un talle'); return; }
     if (!contactName.trim()) { toast?.('Ingresá tu nombre de contacto'); return; }
     createRes.mutate({
-      itemId: item.id, playerId: player.id,
+      item, playerId: player.id,
       size, quantity: qty,
       contactName: contactName.trim(),
       contactPhone: contactPhone.trim(),
@@ -56,17 +57,30 @@ export function ReserveSheet({ item, player, onClose, toast }) {
         </div>
 
         {done ? (
-          <div style={{ padding: '32px 20px', paddingBottom: 'max(32px, env(safe-area-inset-bottom))', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{ overflowY: 'auto', padding: '28px 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 64, height: 64, borderRadius: 18, background: 'rgba(30,158,106,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="check" size={34} color={CC.good} sw={2.4} />
             </div>
-            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 24, color: CC.ink, letterSpacing: 0.3 }}>¡Reserva enviada!</div>
-            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 14, color: CC.muted, lineHeight: 1.4 }}>
-              Tu reserva de <b>{item.name}</b> talle <b>{size}</b> × {qty} está pendiente.<br />El club te va a contactar para coordinar el pago y retiro.
+            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 24, color: CC.ink, letterSpacing: 0.3, textAlign: 'center' }}>¡Reserva enviada!</div>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 14, color: CC.muted, lineHeight: 1.5, textAlign: 'center' }}>
+              Reservaste <b>{item.name}</b> talle <b>{size}</b> × {qty}.
             </div>
-            <div style={{ marginTop: 10, display: 'flex', gap: 8, alignSelf: 'stretch' }}>
-              <button onClick={onClose} style={{ flex: 1, border: 'none', background: CC.navy, color: '#fff', padding: '13px', borderRadius: 13, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17 }}>Listo</button>
+
+            {/* datos de pago si eligió transferencia */}
+            {paymentMethod === 'transferencia' && (
+              <div style={{ alignSelf: 'stretch', background: 'rgba(14,58,92,0.05)', borderRadius: 14, padding: '14px 16px' }}>
+                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14, color: CC.navy, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Datos para transferencia</div>
+                <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 13.5, color: CC.ink, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{paymentInfo}</div>
+              </div>
+            )}
+
+            {/* retiro */}
+            <div style={{ alignSelf: 'stretch', background: 'rgba(249,178,51,0.10)', border: `1.5px solid ${CC.gold}`, borderRadius: 14, padding: '14px 16px', display: 'flex', gap: 10 }}>
+              <Icon name="calendar" size={20} color={CC.goldDeep} sw={2.2} />
+              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, lineHeight: 1.5 }}>{pickupInfo}</div>
             </div>
+
+            <button onClick={onClose} style={{ alignSelf: 'stretch', border: 'none', background: CC.navy, color: '#fff', padding: '13px', borderRadius: 13, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, marginTop: 4 }}>Listo</button>
           </div>
         ) : (
           <>
@@ -114,17 +128,8 @@ export function ReserveSheet({ item, player, onClose, toast }) {
               <div>
                 <div style={labelStyle}>Datos de contacto</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <input
-                    value={contactName} onChange={(e) => setContactName(e.target.value)}
-                    placeholder="Nombre completo"
-                    style={inputStyle}
-                  />
-                  <input
-                    value={contactPhone} onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="Celular (ej: 099 123 456)"
-                    type="tel"
-                    style={inputStyle}
-                  />
+                  <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Nombre completo" style={inputStyle} />
+                  <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Celular (ej: 099 123 456)" type="tel" style={inputStyle} />
                 </div>
               </div>
 
@@ -132,7 +137,10 @@ export function ReserveSheet({ item, player, onClose, toast }) {
               <div>
                 <div style={labelStyle}>Forma de pago</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {PAYMENT_METHODS.map((pm) => {
+                  {[
+                    { id: 'efectivo', label: 'Efectivo al retirar', sub: 'Pagás cuando retirás el producto' },
+                    { id: 'transferencia', label: 'Transferencia bancaria', sub: 'Te mostramos los datos al confirmar' },
+                  ].map((pm) => {
                     const sel = paymentMethod === pm.id;
                     return (
                       <button key={pm.id} onClick={() => setPaymentMethod(pm.id)} style={{
@@ -151,6 +159,14 @@ export function ReserveSheet({ item, player, onClose, toast }) {
                       </button>
                     );
                   })}
+
+                  {/* datos bancarios inline cuando elige transferencia */}
+                  {paymentMethod === 'transferencia' && (
+                    <div style={{ background: 'rgba(14,58,92,0.05)', borderRadius: 12, padding: '12px 14px', marginTop: 2 }}>
+                      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: CC.navy, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>Datos para transferencia</div>
+                      <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 13.5, color: CC.ink, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{paymentInfo}</div>
+                    </div>
+                  )}
                 </div>
               </div>
 

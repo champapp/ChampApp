@@ -903,15 +903,24 @@ export function useMyReservations(playerId) {
 export function useCreateReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ itemId, playerId, size, quantity, contactName, contactPhone, paymentMethod, notes }) => {
+    mutationFn: async ({ item, playerId, size, quantity, contactName, contactPhone, paymentMethod, notes }) => {
+      // Descontar stock al momento de reservar
+      const sizes = (item.sizes || []).map((s) =>
+        s.size === size ? { ...s, stock: Math.max(0, (s.stock || 0) - quantity) } : s
+      );
+      const { error: stockErr } = await supabase.from('shop_items').update({ sizes }).eq('id', item.id);
+      if (stockErr) throw stockErr;
       const { error } = await supabase.from('reservations').insert({
-        item_id: itemId, player_id: playerId, size, quantity,
+        item_id: item.id, player_id: playerId, size, quantity,
         contact_name: contactName, contact_phone: contactPhone,
         payment_method: paymentMethod, notes: notes || null,
       });
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['shop_items'] });
+    },
   });
 }
 
@@ -926,7 +935,32 @@ export function useUpdateReservationStatus() {
   });
 }
 
+// El stock ya fue descontado al reservar. Al entregar solo cambia el estado
+// y suma al contador de vendidos para estadísticas.
 export function useDeliverReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reservation, items }) => {
+      const item = items.find((it) => it.id === reservation.item_id);
+      if (item) {
+        const { error: soldErr } = await supabase
+          .from('shop_items')
+          .update({ sold: (item.sold || 0) + reservation.quantity })
+          .eq('id', item.id);
+        if (soldErr) throw soldErr;
+      }
+      const { error } = await supabase.from('reservations').update({ status: 'entregado' }).eq('id', reservation.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['shop_items'] });
+    },
+  });
+}
+
+// Cancela una reserva y restaura el stock descontado al momento de reservar.
+export function useCancelReservation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ reservation, items }) => {
@@ -934,16 +968,13 @@ export function useDeliverReservation() {
       if (item) {
         const sizes = (item.sizes || []).map((s) =>
           s.size === reservation.size
-            ? { ...s, stock: Math.max(0, (s.stock || 0) - reservation.quantity) }
+            ? { ...s, stock: (s.stock || 0) + reservation.quantity }
             : s
         );
-        const { error: stockErr } = await supabase
-          .from('shop_items')
-          .update({ sizes, sold: (item.sold || 0) + reservation.quantity })
-          .eq('id', item.id);
+        const { error: stockErr } = await supabase.from('shop_items').update({ sizes }).eq('id', item.id);
         if (stockErr) throw stockErr;
       }
-      const { error } = await supabase.from('reservations').update({ status: 'entregado' }).eq('id', reservation.id);
+      const { error } = await supabase.from('reservations').update({ status: 'cancelado' }).eq('id', reservation.id);
       if (error) throw error;
     },
     onSuccess: () => {
