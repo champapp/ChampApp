@@ -6,6 +6,7 @@ import {
   usePlayers, usePlayersArchived, usePractices, useAttendance, useMatches, useRsvp, useGymChecks, useActiveInjuries, useUpdatePlayer,
 } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
+import { BulkPhotoUploader } from './BulkPhotoUploader';
 
 function PlayersLoading() {
   return (
@@ -21,6 +22,7 @@ export function PlayersListScreen({ onOpenPlayer }) {
   const [catId, setCatId] = useState('all');
   const [q, setQ] = useState('');
   const [tab, setTab] = useState('active');
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [toast, showToast] = useToast();
 
   const playersQ = usePlayers();
@@ -60,7 +62,14 @@ export function PlayersListScreen({ onOpenPlayer }) {
 
   return (
     <div style={{ padding: '4px 16px 20px' }}>
-      <SectionTitle icon="players">{'Jugadores · ' + players.length}</SectionTitle>
+      <SectionTitle icon="players" action={
+        <button
+          onClick={() => setBulkOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'rgba(14,58,92,0.07)', color: CC.navy, padding: '6px 13px 6px 10px', borderRadius: 9, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}
+        >
+          <Icon name="camera" size={15} color={CC.navy} sw={2.4} />Fotos
+        </button>
+      }>{'Jugadores · ' + players.length}</SectionTitle>
 
       <div style={{ marginBottom: 12 }}>
         <Segmented value={tab} onChange={setTab} options={[
@@ -128,6 +137,7 @@ export function PlayersListScreen({ onOpenPlayer }) {
         })}
       </div>
       <Toast msg={toast} />
+      {bulkOpen && <BulkPhotoUploader players={players} onClose={() => setBulkOpen(false)} />}
     </div>
   );
 }
