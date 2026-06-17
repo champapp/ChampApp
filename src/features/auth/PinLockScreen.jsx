@@ -3,6 +3,7 @@ import { CC, Avatar } from '../../ui';
 import { useAuth } from './useAuth';
 import { submitBtn } from './authStyles';
 import { PinField, ErrorMsg } from './authUi';
+import { NextMatchStrip } from './NextMatchStrip';
 
 // Pantalla de "candado": el dispositivo ya recuerda quién es esta persona
 // (nombre/foto), solo hace falta el PIN para volver a entrar. La sesión de
@@ -54,6 +55,7 @@ export function PinLockScreen({ remembered, onUnlock, onForgetDevice }) {
       </div>
 
       <div style={{ position: 'relative', padding: '24px 26px 50px', color: '#fff', maxWidth: 420, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+        <NextMatchStrip />
         <form onSubmit={submit}>
           <PinField value={pin} onChange={setPin} />
           <ErrorMsg>{error}</ErrorMsg>
