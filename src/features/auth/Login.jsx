@@ -5,6 +5,62 @@ import { supabase } from '../../lib/supabaseClient';
 import { inputStyle, labelStyle, submitBtn } from './authStyles';
 import { PinField, ErrorMsg } from './authUi';
 
+const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const SHORT_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+function fmtMatchDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return `${SHORT_DAYS[day]} ${d} ${SHORT_MONTHS[m - 1]}`;
+}
+
+function NextMatchStrip() {
+  const [match, setMatch] = useState(null);
+
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    supabase
+      .from('matches')
+      .select('date, time, rival, sub')
+      .eq('cat', 'PS')
+      .eq('sub', 'Primera')
+      .gte('date', today)
+      .order('date', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setMatch(data); });
+  }, []);
+
+  if (!match) return null;
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: 999, padding: '7px 14px', backdropFilter: 'blur(6px)',
+      }}>
+        <Icon name="whistle" size={13} color={CC.gold} sw={2.2} />
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, color: 'rgba(255,255,255,0.9)', letterSpacing: 0.3 }}>
+          {fmtMatchDate(match.date)}
+        </span>
+        <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, color: CC.gold, letterSpacing: 0.2 }}>
+          vs {match.rival}
+        </span>
+        {match.time && (
+          <>
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
+              {match.time}
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function roleBtn(primary) {
   return {
     width: '100%', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
@@ -111,6 +167,7 @@ export function Login() {
       <div style={{ position: 'relative', padding: '24px 26px 50px', color: '#fff', maxWidth: 420, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         {step === 'pick' && (
           <>
+            <NextMatchStrip />
             <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, letterSpacing: 0.5, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>
               Ingresá como
             </div>
