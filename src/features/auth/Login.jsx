@@ -21,15 +21,13 @@ function NextMatchStrip() {
     const today = new Date().toISOString().slice(0, 10);
     supabase
       .from('matches')
-      .select('date, time, rival, sub')
+      .select('date, time, rival')
       .eq('cat', 'PS')
       .gte('date', today)
       .order('date', { ascending: true })
-      .limit(10)
-      .then(({ data }) => {
-        const m = (data || []).find((r) => !r.sub || r.sub === 'Primera');
-        if (m) setMatch(m);
-      });
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setMatch(data); });
   }, []);
 
   if (!match) return null;
