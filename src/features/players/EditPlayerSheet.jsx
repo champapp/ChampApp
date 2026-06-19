@@ -128,7 +128,7 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
       patch.username = f.username.trim().toLowerCase();
     }
 
-    updateMutation.mutate({ id: player.id, patch, oldUsername: player.username }, {
+    updateMutation.mutate({ id: player.id, patch }, {
       onSuccess: () => { onSaved && onSaved(); onClose(); toast('Perfil actualizado'); },
       onError: (err) => toast(err.code === '23505' ? 'Ese usuario ya está en uso' : 'No se pudo guardar'),
     });

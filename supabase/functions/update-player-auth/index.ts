@@ -7,18 +7,19 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
-// Actualiza el email en auth.users cuando el admin cambia el username de un
-// jugador. Requiere Service Role Key porque la Admin API de Supabase es la
-// única forma fiable de modificar auth.users.email desde código externo.
+// Actualiza el email en auth.users cuando el admin cambia el username.
+// Usa auth_user_id (UUID estable) para encontrar al usuario directamente,
+// sin depender de que el email actual coincida con el username actual.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Verificar que quien llama es admin
     const callerClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      supabaseUrl,
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } },
     );
@@ -28,46 +29,34 @@ Deno.serve(async (req) => {
     const { playerId, newUsername } = await req.json();
     if (!playerId || !newUsername) return json({ error: 'faltan parámetros' }, 400);
 
-    // Cliente con privilegios de admin
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
-    // Obtener el username actual del jugador
+    // Obtener auth_user_id del jugador (vínculo directo, no depende del email)
     const { data: player, error: playerErr } = await adminClient
       .from('players')
-      .select('username')
+      .select('username, auth_user_id')
       .eq('id', playerId)
       .single();
+
+    console.log(`Player ${playerId}: username="${player?.username}" auth_user_id="${player?.auth_user_id}"`);
+
     if (playerErr || !player) return json({ error: 'jugador no encontrado' }, 404);
+    if (!player.auth_user_id) return json({ error: 'jugador sin auth_user_id — correr SQL de backfill' }, 404);
 
-    const oldUsername = player.username;
-    if (!oldUsername || oldUsername === newUsername) return json({ ok: true, changed: false });
-
-    // Buscar el usuario en auth.users por su email actual
-    const oldEmail = `${oldUsername}@champapp.local`;
     const newEmail = `${newUsername}@champapp.local`;
 
-    // Paginar hasta encontrar el usuario (perPage 1000 cubre cualquier club razonable)
-    const { data: userList, error: listErr } = await adminClient.auth.admin.listUsers({
-      perPage: 1000,
-    });
-    if (listErr) return json({ error: listErr.message }, 500);
-
-    const authUser = (userList?.users ?? []).find((u) => u.email === oldEmail);
-    if (!authUser) {
-      console.error('Usuario auth no encontrado. Email buscado:', oldEmail);
-      return json({ error: `usuario auth no encontrado: ${oldEmail}` }, 404);
-    }
-
-    const { error: updateErr } = await adminClient.auth.admin.updateUserById(authUser.id, {
+    // Actualizar por UUID directo, sin buscar por email
+    const { error: updateErr } = await adminClient.auth.admin.updateUserById(player.auth_user_id, {
       email: newEmail,
+      email_confirm: true,
     });
+
+    console.log(`Update auth email to "${newEmail}": ${updateErr ? updateErr.message : 'OK'}`);
     if (updateErr) return json({ error: updateErr.message }, 500);
 
-    return json({ ok: true, changed: true });
+    return json({ ok: true, newEmail });
   } catch (err) {
+    console.error('Error inesperado:', err);
     return json({ error: String(err) }, 500);
   }
 });
