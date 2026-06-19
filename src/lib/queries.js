@@ -228,6 +228,45 @@ export function useUpdatePlayer() {
   });
 }
 
+export function useCreatePlayer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ nombre, apellido, cat, sub, division, username, pin }) => {
+      const { data, error: authErr } = await supabase.functions.invoke('create-player-auth', {
+        body: { username, pin },
+      });
+      if (authErr) throw authErr;
+      if (data?.error) throw new Error(data.error);
+      const { error } = await supabase.from('players').insert({
+        nombre, apellido, cat,
+        sub: sub || null,
+        division: cat === 'PS' ? (division || null) : null,
+        username: username.trim().toLowerCase(),
+        auth_user_id: data.userId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['players'] }),
+  });
+}
+
+export function useDeletePlayer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, authUserId }) => {
+      const { data, error: fnErr } = await supabase.functions.invoke('delete-player-auth', {
+        body: { playerId: id, authUserId: authUserId ?? null },
+      });
+      if (fnErr) throw fnErr;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['players', 'archived'] });
+    },
+  });
+}
+
 // Sube la foto de perfil de un jugador (archivo o cámara) al bucket
 // `player-photos` y devuelve su URL pública. Se guarda dentro de una carpeta
 // "<player_id>/..." porque las políticas de Storage usan esa carpeta para
