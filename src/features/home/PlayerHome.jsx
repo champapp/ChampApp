@@ -86,7 +86,7 @@ export function PlayerHome() {
       <PlayerLineups me={player} />
       {d.nextMatch && (
         <div style={{ padding: '16px 16px 0' }}>
-          <NextMatchCard match={d.nextMatch} player={player} />
+          <NextMatchCard match={d.nextMatch} player={player} collapsible />
         </div>
       )}
       <div style={{ padding: '16px 16px 0' }}>
