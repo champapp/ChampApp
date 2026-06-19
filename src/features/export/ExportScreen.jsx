@@ -5,7 +5,7 @@ import {
   categoryAttendance, leastAttenders, playerAttendance, latestGymMarks, injuryStatus, protocolsForInjury,
 } from '../../lib/domain';
 import {
-  usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymMarks, useAllInjuries, useInjuryProtocols, useFisioBookings,
+  usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymMarks, useAllInjuries, useInjuryProtocols, useFisioBookings, useShopItems,
 } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { downloadCSV } from '../../lib/csv';
@@ -36,14 +36,10 @@ function pdfMonthOptions() {
 
 export function ExportScreen() {
   const [toast, showToast] = useToast();
-  const [month, setMonth] = useState('all');
-  const [catId, setCatId] = useState('all');
   const today0 = todayISO().slice(0, 7);
-  const [pdfFrom, setPdfFrom] = useState(() => {
-    const t = todayISO(); const [y, m] = t.slice(0, 7).split('-').map(Number);
-    let mm = m - 2; let yy = y; while (mm <= 0) { mm += 12; yy -= 1; }
-    return `${yy}-${String(mm).padStart(2, '0')}`;
-  });
+  const [month, setMonth] = useState(today0);
+  const [catId, setCatId] = useState('all');
+  const [pdfFrom, setPdfFrom] = useState(today0);
   const [pdfTo, setPdfTo] = useState(today0);
 
   const playersQ = usePlayers();
@@ -55,8 +51,9 @@ export function ExportScreen() {
   const injuriesQ = useAllInjuries();
   const protocolsQ = useInjuryProtocols();
   const fisioQ = useFisioBookings();
+  const shopItemsQ = useShopItems();
 
-  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymMarksQ, injuriesQ, protocolsQ, fisioQ];
+  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymMarksQ, injuriesQ, protocolsQ, fisioQ, shopItemsQ];
   if (queries.some((q) => q.isLoading)) return <ExportLoading />;
 
   const players = playersQ.data ?? [];
@@ -68,6 +65,7 @@ export function ExportScreen() {
   const injuries = injuriesQ.data ?? [];
   const protocols = protocolsQ.data ?? [];
   const fisio = fisioQ.data ?? [];
+  const shopItems = shopItemsQ.data ?? [];
 
   const mLabel = month === 'all' ? 'temporada' : monthName(month).toLowerCase();
 
@@ -233,6 +231,69 @@ ${sections.map(({ cat, catPractices, rows }) => `
     showToast('CSV de lesiones descargado');
   }
 
+  function expShopPDF() {
+    if (!shopItems.length) { showToast('No hay productos en el shop'); return; }
+    const today = todayISO();
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Stock del Shop · Champagnat Rugby</title>
+<style>
+  @page { size: A4 portrait; margin: 14mm 16mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #222; }
+  .header { background: #07243d; color: #fff; padding: 8px 12px; border-radius: 5px 5px 0 0; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+  .header h2 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
+  .header span { font-size: 9px; opacity: 0.7; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0; }
+  th { background: #0e3a5c; color: #fff; padding: 6px 8px; text-align: left; font-size: 9px; font-weight: 700; border: 1px solid #07243d; }
+  td { border: 1px solid #d0d8e0; padding: 5px 8px; font-size: 10px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f5f8fa; }
+  .good { color: #1e9e6a; font-weight: 700; }
+  .bad { color: #e0524e; font-weight: 700; }
+  .sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+  .size-chip { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 700; }
+  .size-ok { background: #d1fae5; color: #065f46; }
+  .size-out { background: #fee2e2; color: #991b1b; }
+  footer { font-size: 8px; color: #999; margin-top: 6px; text-align: right; }
+</style>
+</head><body>
+<div class="header">
+  <h2>Champagnat Rugby · Champa Shop · Stock</h2>
+  <span>Exportado ${today}</span>
+</div>
+<table>
+  <thead><tr>
+    <th style="width:30%">Producto</th>
+    <th style="width:12%">Precio</th>
+    <th style="width:12%">Vendidos</th>
+    <th>Talles y stock</th>
+  </tr></thead>
+  <tbody>
+    ${shopItems.map((item) => {
+      const totalStock = (item.sizes || []).reduce((a, s) => a + (s.stock || 0), 0);
+      const sizeCells = (item.sizes || []).map((s) =>
+        `<span class="size-chip ${s.stock > 0 ? 'size-ok' : 'size-out'}">${s.size}: ${s.stock}</span>`
+      ).join(' ');
+      return `<tr>
+        <td><b>${item.name}</b>${item.descr ? '<br><span style="color:#666;font-size:9px">' + item.descr + '</span>' : ''}</td>
+        <td>$${item.price ?? '—'}</td>
+        <td class="${(item.sold || 0) > 0 ? 'good' : ''}">${item.sold || 0}</td>
+        <td><div class="sizes">${sizeCells || '<span style="color:#bbb">Sin talles</span>'}</div><div style="margin-top:3px;font-size:9px;color:#555">Total: <b class="${totalStock > 0 ? 'good' : 'bad'}">${totalStock}</b></div></td>
+      </tr>`;
+    }).join('')}
+  </tbody>
+</table>
+<footer>${shopItems.length} producto${shopItems.length !== 1 ? 's' : ''} · ${shopItems.reduce((a, i) => a + (i.sizes || []).reduce((b, s) => b + (s.stock || 0), 0), 0)} unidades totales</footer>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) { showToast('Habilitá las ventanas emergentes para exportar'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+    showToast('Stock del shop generado — guardá como PDF');
+  }
+
   const pdfMonthOpts = pdfMonthOptions();
   const selStyle = { border: `1.5px solid ${CC.line}`, borderRadius: 10, padding: '8px 10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: CC.ink, background: '#fff', cursor: 'pointer', flex: 1 };
 
@@ -263,6 +324,7 @@ ${sections.map(({ cat, catPractices, rows }) => `
     { t: 'Ranking de asistencia', d: 'Orden de menor a mayor, por categoría.', icon: 'trophy', fn: expRanking },
     { t: 'Mediciones de gimnasio', d: 'Datos físicos y últimos registros de fuerza.', icon: 'weight', fn: expGym },
     { t: 'Historial de lesiones', d: 'Consulta, diagnóstico, protocolos y fechas de retorno.', icon: 'medkit', fn: expInjuries },
+    { t: 'Stock del Shop PDF', d: 'Tabla de productos con talles, stock disponible y vendidos.', icon: 'bag', fn: expShopPDF },
   ];
 
   return (

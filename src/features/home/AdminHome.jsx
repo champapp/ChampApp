@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CC, SectionTitle, Toast } from '../../ui';
 import { useToast } from '../../lib/useToast';
 import { usePlayers, usePractices, useAttendance, useMatches, useRsvp, useActiveInjuries } from '../../lib/queries';
-import { injuredPlayers } from '../../lib/domain';
+import { injuredPlayers, todayISO } from '../../lib/domain';
 import { AdminMessages } from '../messages/AdminMessages';
 import { AdminDashboard } from './AdminDashboard';
 import { SanidadShortcut } from './SanidadShortcut';
@@ -20,7 +20,7 @@ function HomeLoading() {
 // (asistencia general, por categoría, tendencia y ranking).
 export function AdminHome({ onGoToHealth }) {
   const [toast, showToast] = useToast();
-  const [month, setMonth] = useState('all');
+  const [month, setMonth] = useState(() => todayISO().slice(0, 7));
   const [openId, setOpenId] = useState(null);
 
   const playersQ = usePlayers();
