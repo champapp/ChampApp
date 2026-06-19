@@ -211,8 +211,8 @@ export function useCancelFisio() {
 export function useUpdatePlayer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, patch }) => {
-      if (patch.username !== undefined) {
+    mutationFn: async ({ id, patch, oldUsername }) => {
+      if (patch.username !== undefined && patch.username !== oldUsername) {
         const { data, error: authErr } = await supabase.functions.invoke('update-player-auth', {
           body: { playerId: id, newUsername: patch.username },
         });
