@@ -49,11 +49,17 @@ Deno.serve(async (req) => {
     const oldEmail = `${oldUsername}@champapp.local`;
     const newEmail = `${newUsername}@champapp.local`;
 
-    const { data: userList, error: listErr } = await adminClient.auth.admin.listUsers();
+    // Paginar hasta encontrar el usuario (perPage 1000 cubre cualquier club razonable)
+    const { data: userList, error: listErr } = await adminClient.auth.admin.listUsers({
+      perPage: 1000,
+    });
     if (listErr) return json({ error: listErr.message }, 500);
 
     const authUser = (userList?.users ?? []).find((u) => u.email === oldEmail);
-    if (!authUser) return json({ error: `usuario auth no encontrado: ${oldEmail}` }, 404);
+    if (!authUser) {
+      console.error('Usuario auth no encontrado. Email buscado:', oldEmail);
+      return json({ error: `usuario auth no encontrado: ${oldEmail}` }, 404);
+    }
 
     const { error: updateErr } = await adminClient.auth.admin.updateUserById(authUser.id, {
       email: newEmail,
