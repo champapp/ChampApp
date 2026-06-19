@@ -64,6 +64,7 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
     phone: player.phone || '',
     emergencyContact: player.emergency_contact || '',
     emergencyMedical: player.emergency_medical || '',
+    ci: player.ci || '',
     photoUrl: player.photo_url || '',
   });
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -114,6 +115,7 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
       phone: f.phone.trim() || null,
       emergency_contact: f.emergencyContact.trim() || null,
       emergency_medical: f.emergencyMedical.trim() || null,
+      ci: f.ci.trim() || null,
       photo_url: f.photoUrl || null,
       pos: posMeta ? posMeta.pos : null,
       pos_short: posMeta ? posMeta.short : null,
@@ -207,15 +209,13 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
               </Field>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Field label="Fecha de nacimiento" half><TextInput type="date" value={f.birthDate} onChange={(e) => set('birthDate', e.target.value)} /></Field>
-            <Field label="Puesto" half>
-              <SelectInput value={f.dorsalKey} onChange={(e) => set('dorsalKey', e.target.value)}>
-                <option value="">Sin asignar</option>
-                {POSITIONS.map((o) => <option key={o.dorsal} value={o.dorsal}>#{o.dorsal} {o.pos}</option>)}
-              </SelectInput>
-            </Field>
-          </div>
+          <Field label="Fecha de nacimiento"><TextInput type="date" value={f.birthDate} onChange={(e) => set('birthDate', e.target.value)} /></Field>
+          <Field label="Puesto">
+            <SelectInput value={f.dorsalKey} onChange={(e) => set('dorsalKey', e.target.value)}>
+              <option value="">Sin asignar</option>
+              {POSITIONS.map((o) => <option key={o.dorsal} value={o.dorsal}>#{o.dorsal} {o.pos}</option>)}
+            </SelectInput>
+          </Field>
           <div style={{ display: 'flex', gap: 10 }}>
             <Field label="Peso (kg)" half><TextInput type="number" value={f.peso} onChange={(e) => set('peso', e.target.value)} placeholder="—" /></Field>
             <Field label="Talla (cm)" half><TextInput type="number" value={f.talla} onChange={(e) => set('talla', e.target.value)} placeholder="—" /></Field>
@@ -233,9 +233,12 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
             </div>
             <Field label="Celular"><TextInput value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="Ej: 099 123 456" /></Field>
             <div style={{ height: 10 }} />
-            <Field label="Contacto de emergencia"><TextInput value={f.emergencyContact} onChange={(e) => set('emergencyContact', e.target.value)} placeholder="Ej: María (mamá) · 099 765 432" /></Field>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Field label="Contacto de emergencia" half><TextInput value={f.emergencyContact} onChange={(e) => set('emergencyContact', e.target.value)} placeholder="Ej: María (mamá) · 099 765 432" /></Field>
+              <Field label="Sociedad médica" half><TextInput value={f.emergencyMedical} onChange={(e) => set('emergencyMedical', e.target.value)} placeholder="Ej: SEMM · Socio 12345" /></Field>
+            </div>
             <div style={{ height: 10 }} />
-            <Field label="Emergencia médica / cobertura"><TextInput value={f.emergencyMedical} onChange={(e) => set('emergencyMedical', e.target.value)} placeholder="Ej: SEMM · Socio 12345" /></Field>
+            <Field label="Cédula de identidad (CI)"><TextInput value={f.ci} onChange={(e) => set('ci', e.target.value)} placeholder="Ej: 5.123.456-7" /></Field>
           </div>
 
           {selfEdit && <AdminDocsEditor playerId={player.id} />}
