@@ -212,6 +212,13 @@ export function useUpdatePlayer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }) => {
+      if (patch.username !== undefined) {
+        const { error: authErr } = await supabase.rpc('sync_player_auth_email', {
+          p_player_id: id,
+          p_new_username: patch.username,
+        });
+        if (authErr) throw authErr;
+      }
       const { error } = await supabase.from('players').update(patch).eq('id', id);
       if (error) throw error;
     },
