@@ -125,7 +125,10 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
 
     if (!selfEdit) {
       patch.objetivo = f.objetivo.trim() || null;
-      patch.username = f.username.trim().toLowerCase();
+      const newUsername = f.username.trim().toLowerCase();
+      if (newUsername !== player.username) {
+        patch.username = newUsername;
+      }
     }
 
     updateMutation.mutate({ id: player.id, patch }, {
