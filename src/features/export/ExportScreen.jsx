@@ -130,17 +130,20 @@ export function ExportScreen() {
         .sort((a, b) => a.date.localeCompare(b.date));
 
       // Agrupar prácticas por fecha (puede haber varias por día si hay subcategorías)
+      console.log('[PDF]', cat, 'prácticas raw:', catPractices.map((p) => ({ id: p.id, date: p.date, sub: p.sub })));
       const dateMap = new Map();
       catPractices.forEach((pr) => {
-        if (!dateMap.has(pr.date)) dateMap.set(pr.date, []);
-        dateMap.get(pr.date).push(pr.id);
+        const key = String(pr.date).slice(0, 10);
+        if (!dateMap.has(key)) dateMap.set(key, []);
+        dateMap.get(key).push(pr.id);
       });
       const uniqueDates = [...dateMap.keys()].sort();
+      console.log('[PDF]', cat, 'uniqueDates:', uniqueDates);
 
       const rows = catPlayers.map((player) => {
         const att = playerAttendance({ practices, attendance, matches, rsvp, player });
-        const checks = uniqueDates.map((date) => {
-          const statuses = dateMap.get(date).map((pid) => presenceMap.get(`${player.id}_${pid}`) || '');
+        const checks = uniqueDates.map((dateKey) => {
+          const statuses = (dateMap.get(dateKey) || []).map((pid) => presenceMap.get(`${player.id}_${pid}`) || '');
           if (statuses.includes('P')) return 'P';
           if (statuses.includes('A')) return 'A';
           return '';
