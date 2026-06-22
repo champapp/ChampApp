@@ -140,10 +140,9 @@ export function ExportScreen() {
       const rows = catPlayers.map((player) => {
         const att = playerAttendance({ practices, attendance, matches, rsvp, player });
         const checks = uniqueDates.map((date) => {
-          for (const pid of dateMap.get(date)) {
-            const status = presenceMap.get(`${player.id}_${pid}`);
-            if (status) return status;
-          }
+          const statuses = dateMap.get(date).map((pid) => presenceMap.get(`${player.id}_${pid}`) || '');
+          if (statuses.includes('P')) return 'P';
+          if (statuses.includes('A')) return 'A';
           return '';
         });
         return { name: player.name, rate: Math.round((att.rate || 0) * 100), checks };
