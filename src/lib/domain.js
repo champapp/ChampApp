@@ -583,7 +583,7 @@ export function ageFromBirth(player, today = todayISO()) {
 // ── Rutinas de gimnasio ─────────────────────────────────────
 
 // secciones posibles de un ejercicio dentro de un bloque de rutina
-export const ROUTINE_SECTIONS = ['CALENTAMIENTO', 'POTENCIA', 'HIPERTROFIA', 'FÍSICO', 'CONDICIONER'];
+export const ROUTINE_SECTIONS = ['CALENTAMIENTO', 'POTENCIA', 'HIPERTROFIA', 'FÍSICO', 'CONDICIONER', 'FUERZA SUBMÁXIMA', 'FUERZA MÁXIMA', 'FUERZA SUBMÁXIMA REPETIDA'];
 
 // unidades posibles para una marca de gimnasio
 export const GYM_UNITS = ['kg', 'reps', 'cm', 'seg', 'm'];
