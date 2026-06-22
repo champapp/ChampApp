@@ -5,7 +5,7 @@ import {
   categoryAttendance, leastAttenders, playerAttendance, latestGymMarks, injuryStatus, protocolsForInjury,
 } from '../../lib/domain';
 import {
-  usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymMarks, useAllInjuries, useInjuryProtocols, useFisioBookings, useShopItems,
+  usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymMarks, useGymChecks, useAllInjuries, useInjuryProtocols, useFisioBookings, useShopItems,
 } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { downloadCSV } from '../../lib/csv';
@@ -41,6 +41,8 @@ export function ExportScreen() {
   const [catId, setCatId] = useState('all');
   const [pdfFrom, setPdfFrom] = useState(today0);
   const [pdfTo, setPdfTo] = useState(today0);
+  const [pdfGymFrom, setPdfGymFrom] = useState(today0);
+  const [pdfGymTo, setPdfGymTo] = useState(today0);
 
   const playersQ = usePlayers();
   const practicesQ = usePractices();
@@ -48,12 +50,13 @@ export function ExportScreen() {
   const matchesQ = useMatches();
   const rsvpQ = useRsvp();
   const gymMarksQ = useGymMarks();
+  const gymChecksQ = useGymChecks();
   const injuriesQ = useAllInjuries();
   const protocolsQ = useInjuryProtocols();
   const fisioQ = useFisioBookings();
   const shopItemsQ = useShopItems();
 
-  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymMarksQ, injuriesQ, protocolsQ, fisioQ, shopItemsQ];
+  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymMarksQ, gymChecksQ, injuriesQ, protocolsQ, fisioQ, shopItemsQ];
   if (queries.some((q) => q.isLoading)) return <ExportLoading />;
 
   const players = playersQ.data ?? [];
@@ -62,6 +65,7 @@ export function ExportScreen() {
   const matches = matchesQ.data ?? [];
   const rsvp = rsvpQ.data ?? [];
   const gymMarks = gymMarksQ.data ?? [];
+  const gymChecks = gymChecksQ.data ?? [];
   const injuries = injuriesQ.data ?? [];
   const protocols = protocolsQ.data ?? [];
   const fisio = fisioQ.data ?? [];
@@ -218,6 +222,103 @@ ${sections.map(({ cat, uniqueDates, rows }) => `
     showToast('Planilla generada — guardá como PDF desde el diálogo de impresión');
   }
 
+  function expGymPDF() {
+    const today = todayISO();
+    const fromDate = pdfGymFrom + '-01';
+    const toDate = pdfGymTo + '-31';
+    const catList = catId === 'all' ? GYM_CATS : (GYM_CATS.includes(catId) ? [catId] : []);
+    const fmtD = (iso) => { const [, m, d] = String(iso).slice(0, 10).split('-'); return `${d}/${m}`; };
+
+    const sections = catList.map((cat) => {
+      const catPlayers = players.filter((p) => p.cat === cat).sort((a, b) => a.name.localeCompare(b.name));
+      if (!catPlayers.length) return null;
+      const playerIds = new Set(catPlayers.map((p) => p.id));
+      const rangeChecks = gymChecks.filter((c) => {
+        const d = String(c.date).slice(0, 10);
+        return playerIds.has(c.player_id) && d >= fromDate && d <= toDate;
+      });
+      const dateSet = new Set(rangeChecks.map((c) => String(c.date).slice(0, 10)));
+      const uniqueDates = [...dateSet].sort();
+      if (!uniqueDates.length) return null;
+
+      const rows = catPlayers.map((player) => {
+        const playerDates = new Set(
+          gymChecks
+            .filter((c) => c.player_id === player.id)
+            .map((c) => String(c.date).slice(0, 10))
+            .filter((d) => d >= fromDate && d <= toDate)
+        );
+        const presentDays = uniqueDates.filter((d) => playerDates.has(d)).length;
+        const rate = uniqueDates.length ? Math.round((presentDays / uniqueDates.length) * 100) : 0;
+        const checks = uniqueDates.map((d) => playerDates.has(d) ? 'P' : '');
+        return { name: player.name, rate, checks };
+      });
+      return { cat, uniqueDates, rows };
+    }).filter(Boolean);
+
+    if (!sections.length) { showToast('Sin registros de gym para exportar'); return; }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Asistencia Gym · Champagnat Rugby</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 15mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 9px; color: #222; }
+  .section { page-break-after: always; padding-bottom: 8px; }
+  .section:last-child { page-break-after: avoid; }
+  .header { background: #07243d; color: #fff; padding: 7px 10px; border-radius: 5px 5px 0 0; display: flex; align-items: center; justify-content: space-between; }
+  .header h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+  .header span { font-size: 9px; opacity: 0.7; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #0e3a5c; color: #fff; padding: 5px; text-align: left; font-size: 8.5px; font-weight: 700; border: 1px solid #07243d; }
+  th.center { text-align: center; }
+  td { border: 1px solid #d0d8e0; padding: 4px 5px; font-size: 9px; }
+  tr:nth-child(even) td { background: #f5f8fa; }
+  .p { color: #1e9e6a; font-weight: 700; text-align: center; }
+  .nd { color: #bbb; text-align: center; }
+  .rate { font-weight: 700; text-align: right; }
+  .rate-good { color: #1e9e6a; }
+  .rate-med { color: #d97706; }
+  .rate-bad { color: #e0524e; }
+  footer { font-size: 7.5px; color: #999; margin-top: 5px; text-align: right; }
+</style>
+</head><body>
+${sections.map(({ cat, uniqueDates, rows }) => `
+<div class="section">
+  <div class="header">
+    <h2>Champagnat Rugby · ${cat} · Asistencia Gimnasio</h2>
+    <span>Exportado ${today}</span>
+  </div>
+  <table>
+    <thead><tr>
+      <th style="min-width:150px">Jugador</th>
+      <th class="center" style="min-width:42px">%</th>
+      ${uniqueDates.map((d) => `<th class="center" style="min-width:28px">${fmtD(d)}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+      ${rows.map(({ name, rate, checks }) => {
+        const rc = rate >= 75 ? 'rate-good' : rate >= 50 ? 'rate-med' : 'rate-bad';
+        return `<tr>
+          <td>${name}</td>
+          <td class="rate ${rc}">${rate}%</td>
+          ${checks.map((c) => c === 'P' ? '<td class="p">✓</td>' : '<td class="nd">—</td>').join('')}
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  <footer>${rows.length} jugador${rows.length !== 1 ? 'es' : ''} · ${uniqueDates.length} día${uniqueDates.length !== 1 ? 's' : ''} · período ${pdfGymFrom} / ${pdfGymTo}</footer>
+</div>`).join('')}
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) { showToast('Habilitá las ventanas emergentes para exportar'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+    showToast('Planilla de gym generada — guardá como PDF');
+  }
+
   function expInjuries() {
     const rows = [['Jugador', 'Categoría', 'Estado', 'Fecha de consulta', 'Diagnóstico', 'Protocolos', 'Fecha de retorno', 'Días restantes', 'Consultas fisio']];
     const protoTxt = (injuryId) => protocolsForInjury(protocols, injuryId)
@@ -341,6 +442,28 @@ ${sections.map(({ cat, uniqueDates, rows }) => `
     { t: 'Asistencia por categoría', d: 'Resumen agregado por categoría.', icon: 'whistle', fn: expCats },
     { t: 'Ranking de asistencia', d: 'Orden de menor a mayor, por categoría.', icon: 'trophy', fn: expRanking },
     { t: 'Mediciones de gimnasio', d: 'Datos físicos y últimos registros de fuerza.', icon: 'weight', fn: expGym },
+    {
+      t: 'Planilla de asistencia gym PDF',
+      d: 'Una página por categoría con los días que cada jugador fue al gym. Elegí el período.',
+      icon: 'weight', highlight: false,
+      extra: (
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>Desde</div>
+            <select value={pdfGymFrom} onChange={(e) => setPdfGymFrom(e.target.value)} style={selStyle}>
+              {pdfMonthOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>Hasta</div>
+            <select value={pdfGymTo} onChange={(e) => setPdfGymTo(e.target.value)} style={selStyle}>
+              {pdfMonthOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+        </div>
+      ),
+      fn: expGymPDF,
+    },
     { t: 'Historial de lesiones', d: 'Consulta, diagnóstico, protocolos y fechas de retorno.', icon: 'medkit', fn: expInjuries },
     { t: 'Stock del Shop PDF', d: 'Tabla de productos con talles, stock disponible y vendidos.', icon: 'bag', fn: expShopPDF },
   ];
