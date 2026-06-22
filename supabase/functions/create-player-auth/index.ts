@@ -8,7 +8,8 @@ const json = (body: unknown, status = 200) =>
   });
 
 // Crea un usuario en auth.users para un jugador nuevo.
-// Solo admins pueden invocarla. Devuelve el UUID del usuario creado.
+// Si ya existe un usuario con ese email (jugador eliminado anteriormente),
+// lo elimina primero para empezar limpio.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -33,6 +34,18 @@ Deno.serve(async (req) => {
 
     const email = `${username.trim().toLowerCase()}@champapp.local`;
     const password = `${pin}-champ`;
+
+    // Si ya existe un usuario con ese email (de un jugador eliminado), borrarlo primero
+    const listRes = await fetch(
+      `${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const listData = await listRes.json();
+    const existing = (listData.users ?? []).find((u: { email: string; id: string }) => u.email === email);
+    if (existing) {
+      console.log(`Usuario existente encontrado (${existing.id}), eliminando antes de recrear`);
+      await adminClient.auth.admin.deleteUser(existing.id);
+    }
 
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
       email,
