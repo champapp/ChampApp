@@ -119,20 +119,36 @@ export function ExportScreen() {
     const fromDate = pdfFrom + '-01';
     const toDate = pdfTo + '-31';
 
+    const presenceMap = new Map();
+    attendance.forEach((a) => presenceMap.set(`${a.player_id}_${a.practice_id}`, a.status));
+
     const sections = catList.map((cat) => {
       const catPlayers = players.filter((p) => p.cat === cat).sort((a, b) => a.name.localeCompare(b.name));
       if (!catPlayers.length) return null;
       const catPractices = practices
         .filter((pr) => pr.cat === cat && pr.date >= fromDate && pr.date <= toDate)
         .sort((a, b) => a.date.localeCompare(b.date));
-      const presenceMap = new Map();
-      attendance.forEach((a) => presenceMap.set(`${a.player_id}_${a.practice_id}`, a.status));
+
+      // Agrupar prácticas por fecha (puede haber varias por día si hay subcategorías)
+      const dateMap = new Map();
+      catPractices.forEach((pr) => {
+        if (!dateMap.has(pr.date)) dateMap.set(pr.date, []);
+        dateMap.get(pr.date).push(pr.id);
+      });
+      const uniqueDates = [...dateMap.keys()].sort();
+
       const rows = catPlayers.map((player) => {
         const att = playerAttendance({ practices, attendance, matches, rsvp, player });
-        const checks = catPractices.map((pr) => presenceMap.get(`${player.id}_${pr.id}`) || '');
+        const checks = uniqueDates.map((date) => {
+          for (const pid of dateMap.get(date)) {
+            const status = presenceMap.get(`${player.id}_${pid}`);
+            if (status) return status;
+          }
+          return '';
+        });
         return { name: player.name, rate: Math.round((att.rate || 0) * 100), checks };
       });
-      return { cat, catPractices, rows };
+      return { cat, uniqueDates, rows };
     }).filter(Boolean);
 
     if (!sections.length) { showToast('Sin jugadores para exportar'); return; }
@@ -164,7 +180,7 @@ export function ExportScreen() {
   footer { font-size: 7.5px; color: #999; margin-top: 5px; text-align: right; }
 </style>
 </head><body>
-${sections.map(({ cat, catPractices, rows }) => `
+${sections.map(({ cat, uniqueDates, rows }) => `
 <div class="section">
   <div class="header">
     <h2>Champagnat Rugby · ${cat} · Planilla de Asistencia</h2>
@@ -174,7 +190,7 @@ ${sections.map(({ cat, catPractices, rows }) => `
     <thead><tr>
       <th style="min-width:150px">Jugador</th>
       <th class="center" style="min-width:42px">%</th>
-      ${catPractices.map((pr) => `<th class="center" style="min-width:30px">${fmtD(pr.date)}</th>`).join('')}
+      ${uniqueDates.map((d) => `<th class="center" style="min-width:30px">${fmtD(d)}</th>`).join('')}
     </tr></thead>
     <tbody>
       ${rows.map(({ name, rate, checks }) => {
@@ -187,7 +203,7 @@ ${sections.map(({ cat, catPractices, rows }) => `
       }).join('')}
     </tbody>
   </table>
-  <footer>${rows.length} jugador${rows.length !== 1 ? 'es' : ''} · ${catPractices.length} práctica${catPractices.length !== 1 ? 's' : ''} · período ${pdfFrom} / ${pdfTo}</footer>
+  <footer>${rows.length} jugador${rows.length !== 1 ? 'es' : ''} · ${uniqueDates.length} día${uniqueDates.length !== 1 ? 's' : ''} · período ${pdfFrom} / ${pdfTo}</footer>
 </div>`).join('')}
 </body></html>`;
 
