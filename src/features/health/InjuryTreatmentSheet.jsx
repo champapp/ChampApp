@@ -83,7 +83,7 @@ export function InjuryTreatmentSheet({ player, injury, protocols = [], onClose, 
                 </div>
               )}
               <div style={{ display: 'flex', gap: 7, alignItems: 'flex-end' }}>
-                <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={2} placeholder="Indicación (ej: crioterapia 3x/día, propiocepción en plato…)" style={{ flex: 1, boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 11, padding: '9px 11px', fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, background: '#fff', resize: 'none', lineHeight: 1.35 }} />
+                <textarea value={txt} onChange={(e) => setTxt(e.target.value)} rows={4} placeholder="Indicación (ej: crioterapia 3x/día, propiocepción en plato…)" style={{ flex: 1, boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 11, padding: '9px 11px', fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, background: '#fff', resize: 'vertical', lineHeight: 1.35 }} />
                 <button onClick={addProto} disabled={!txt.trim()} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: txt.trim() ? CC.navy : 'rgba(14,58,92,0.2)', color: '#fff', borderRadius: 11, padding: '10px 13px', cursor: txt.trim() ? 'pointer' : 'default', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14, letterSpacing: 0.3 }}>
                   <Icon name="plus" size={16} color="#fff" sw={2.6} />Agregar
                 </button>

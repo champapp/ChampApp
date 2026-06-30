@@ -8,6 +8,7 @@ import {
 import { useToast } from '../../lib/useToast';
 import { BulkPhotoUploader } from './BulkPhotoUploader';
 import { CreatePlayerSheet } from './CreatePlayerSheet';
+import { BulkPlayerUpload } from './BulkPlayerUpload';
 
 function PlayersLoading() {
   return (
@@ -20,13 +21,19 @@ function PlayersLoading() {
 }
 
 export function PlayersListScreen({ onOpenPlayer }) {
-  const [catId, setCatId] = useState('all');
+  const [catId, setCatId] = useState(() => localStorage.getItem('champ_players_cat') || 'all');
   const [q, setQ] = useState('');
   const [tab, setTab] = useState('active');
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmDelId, setConfirmDelId] = useState(null);
   const [toast, showToast] = useToast();
+
+  function handleCatChange(v) {
+    localStorage.setItem('champ_players_cat', v);
+    setCatId(v);
+  }
 
   const playersQ = usePlayers();
   const archivedQ = usePlayersArchived();
@@ -78,6 +85,9 @@ export function PlayersListScreen({ onOpenPlayer }) {
           <button onClick={() => setCreateOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: CC.gold, color: CC.navy, padding: '6px 13px 6px 10px', borderRadius: 9, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}>
             <Icon name="plus" size={15} color={CC.navy} sw={2.5} />Nuevo
           </button>
+          <button onClick={() => setBulkImportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'rgba(14,58,92,0.07)', color: CC.navy, padding: '6px 13px 6px 10px', borderRadius: 9, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}>
+            <Icon name="upload" size={15} color={CC.navy} sw={2.4} />CSV
+          </button>
           <button onClick={() => setBulkOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'rgba(14,58,92,0.07)', color: CC.navy, padding: '6px 13px 6px 10px', borderRadius: 9, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}>
             <Icon name="camera" size={15} color={CC.navy} sw={2.4} />Fotos
           </button>
@@ -101,8 +111,8 @@ export function PlayersListScreen({ onOpenPlayer }) {
 
       {!archived && (
         <div style={{ display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 4, marginBottom: 14 }}>
-          <Chip active={catId === 'all'} onClick={() => setCatId('all')}>Todas</Chip>
-          {CATS.map((c) => <Chip key={c.id} active={c.id === catId} onClick={() => setCatId(c.id)}>{c.id}</Chip>)}
+          <Chip active={catId === 'all'} onClick={() => handleCatChange('all')}>Todas</Chip>
+          {CATS.map((c) => <Chip key={c.id} active={c.id === catId} onClick={() => handleCatChange(c.id)}>{c.id}</Chip>)}
         </div>
       )}
 
@@ -171,6 +181,7 @@ export function PlayersListScreen({ onOpenPlayer }) {
         })}
       </div>
       <Toast msg={toast} />
+      {bulkImportOpen && <BulkPlayerUpload onClose={() => setBulkImportOpen(false)} toast={showToast} />}
       {bulkOpen && <BulkPhotoUploader players={players} onClose={() => setBulkOpen(false)} />}
       {createOpen && (
         <CreatePlayerSheet

@@ -85,8 +85,78 @@ export function AdminDashboard({ players, practices, attendance, matches, rsvp, 
   const trend = monthlyTrend({ practices, attendance, cat: trendCat });
   const ranking = leastAttenders({ practices, attendance, matches, rsvp, players, cat: rankCat, sub: null, month, limit: 6 });
 
+  // Jugadores activos por categoría
+  const playersByCat = CATS.map((c) => ({ id: c.id, count: players.filter((p) => p.cat === c.id).length }));
+
+  // Victorias por categoría (solo partidos con resultado cargado)
+  const winsByCat = {};
+  (matches || []).forEach((m) => {
+    if (m.score_us != null && m.score_them != null) {
+      if (!winsByCat[m.cat]) winsByCat[m.cat] = { wins: 0, played: 0 };
+      winsByCat[m.cat].played++;
+      if (m.score_us > m.score_them) winsByCat[m.cat].wins++;
+    }
+  });
+  const catsWithMatches = Object.keys(winsByCat);
+
   const widgets = [
     { id: 'resumen', label: 'Resumen del club', icon: 'stats', node: <ResumenCard ov={ov} month={month} byCatCount={byCat.length} /> },
+    {
+      id: 'plantel', label: 'Jugadores por categoría', icon: 'players',
+      node: (
+        <div>
+          <SectionTitle icon="players">Jugadores por categoría</SectionTitle>
+          <Card pad={16}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
+              {playersByCat.filter((c) => c.count > 0).map((c) => (
+                <div key={c.id} style={{ background: `linear-gradient(145deg, ${CC.navy} 0%, ${CC.navy900} 100%)`, borderRadius: 14, padding: '14px 10px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 36, lineHeight: 1, color: CC.gold }}>{c.count}</div>
+                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 5 }}>{c.id}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: `1px solid ${CC.line}` }}>
+              <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.muted }}>Total del club</span>
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 22, color: CC.navy }}>{players.length} jugadores</span>
+            </div>
+          </Card>
+        </div>
+      ),
+    },
+    {
+      id: 'partidos', label: 'Partidos ganados', icon: 'trophy',
+      node: (
+        <div>
+          <SectionTitle icon="trophy">Partidos · victorias por plantel</SectionTitle>
+          <Card pad={16}>
+            {catsWithMatches.length === 0 ? (
+              <Empty t="Sin partidos con resultado cargado" />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {catsWithMatches.map((cat) => {
+                  const { wins, played } = winsByCat[cat];
+                  const rate = played > 0 ? wins / played : 0;
+                  return (
+                    <div key={cat}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, color: CC.ink, letterSpacing: 0.3 }}>{cat}</span>
+                          <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted }}>{wins}V · {played - wins}D de {played} jugados</span>
+                        </div>
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 20, color: rateColor(rate) }}>{fmtPct(rate)}</span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 5, background: 'rgba(14,58,92,0.08)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 5, background: rateColor(rate), width: `${rate * 100}%`, transition: 'width 0.5s' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+      ),
+    },
     {
       id: 'categorias', label: 'Asistencia por categoría', icon: 'stats',
       node: (

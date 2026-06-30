@@ -53,6 +53,7 @@ export function Icon({ name, size = 22, color = 'currentColor', sw = 2 }) {
     file: <><path d="M14 3H5a1 1 0 00-1 1v16a1 1 0 001 1h14a1 1 0 001-1V8z" {...p} /><path d="M14 3v5h5" {...p} /><path d="M9 12h6M9 16h4" {...p} /></>,
     chart: <><path d="M3 3v18h18" {...p} /><path d="M7 16l4-5 4 3 4-6" {...p} /></>,
     bolt: <path d="M13 2L4.5 13H12l-1 9 8.5-11H12z" {...p} />,
+    upload: <><path d="M12 15V4M8 8l4-4 4 4" {...p} /><path d="M5 20h14" {...p} /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'block', flexShrink: 0 }}>
