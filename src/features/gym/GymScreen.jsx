@@ -5,6 +5,7 @@ import { useRoutines, useGymChecks, useGymMarks } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { PlayerRoutines } from './PlayerRoutines';
 import { GymMarksHistory } from './GymMarksHistory';
+import { GymEditButton } from './GymEditButton';
 import { PlayerGallery } from '../players/PlayerGallery';
 
 export function GymScreen() {
@@ -24,6 +25,7 @@ export function GymScreen() {
   const myRoutines = routinesForPlayer({ routines, gymChecks, player });
   const latest = latestGymMarks(gymMarks, player.id);
   const exercises = Object.keys(latest);
+  const canEditMarks = player.cat === 'M19' || player.cat === 'PS';
 
   return (
     <div style={{ padding: '4px 16px 20px' }}>
@@ -38,7 +40,10 @@ export function GymScreen() {
         </Card>
       )}
 
-      <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase', margin: '4px 0 9px' }}>Mis marcas</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 9px' }}>
+        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase' }}>Mis marcas</div>
+        {canEditMarks && <GymEditButton player={player} marks={gymMarks} toast={showToast} />}
+      </div>
       {exercises.length ? (
         <Card pad={16}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

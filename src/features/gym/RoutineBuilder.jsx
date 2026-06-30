@@ -121,9 +121,9 @@ export function RoutineBuilder({ initial, onClose, toast }) {
                 {b.exercises.map((ex, ei) => (
                   <div key={ei} style={{ border: `1px solid ${CC.line}`, borderRadius: 11, padding: 8, background: CC.paper, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <select value={ex.section || ''} onChange={(e) => setEx(bi, ei, 'section', e.target.value)} style={{ width: 128, flexShrink: 0, boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 9, padding: '8px 6px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, color: ex.section ? CC.navy : CC.faint, background: '#fff' }}>
+                      <select value={ex.section || ''} onChange={(e) => setEx(bi, ei, 'section', e.target.value)} style={{ width: 128, flexShrink: 0, boxSizing: 'border-box', border: `1.5px solid ${ex.section === 'EVALUACIÓN' ? CC.bad : CC.line}`, borderRadius: 9, padding: '8px 6px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, color: ex.section === 'EVALUACIÓN' ? CC.bad : (ex.section ? CC.navy : CC.faint), background: ex.section === 'EVALUACIÓN' ? 'rgba(224,82,78,0.07)' : '#fff' }}>
                         <option value="">Sección…</option>
-                        {ROUTINE_SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        {ROUTINE_SECTIONS.map((s) => <option key={s} value={s}>{s === 'EVALUACIÓN' ? '🔴 ' + s : s}</option>)}
                       </select>
                       <input value={ex.name} onChange={(e) => setEx(bi, ei, 'name', e.target.value)} placeholder="Ejercicio" style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 9, padding: '8px 10px', fontFamily: 'Barlow, sans-serif', fontSize: 14, color: CC.ink, background: '#fff' }} />
                     </div>

@@ -1,8 +1,10 @@
-import { CC, SectionTitle, Card, Toast } from '../../ui';
+import { useState } from 'react';
+import { CC, Icon, SectionTitle, Card, Toast } from '../../ui';
 import { useToast } from '../../lib/useToast';
 import { usePlayers, useGymMarks, usePractices, useAttendance } from '../../lib/queries';
 import { GYM_CATS, categoryAverages } from '../../lib/domain';
 import { AdminRoutines } from './AdminRoutines';
+import { BulkMarksUpload } from './BulkMarksUpload';
 
 function GymAveragesSection() {
   const playersQ = usePlayers();
@@ -65,11 +67,17 @@ function GymAveragesSection() {
 
 export function AdminGymScreen() {
   const [toast, showToast] = useToast();
+  const [importOpen, setImportOpen] = useState(false);
   return (
     <div style={{ padding: '4px 16px 20px' }}>
-      <SectionTitle icon="weight">Gimnasio</SectionTitle>
+      <SectionTitle icon="weight" action={
+        <button onClick={() => setImportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'rgba(14,58,92,0.07)', color: CC.navy, padding: '6px 12px 6px 9px', borderRadius: 9, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14 }}>
+          <Icon name="upload" size={14} color={CC.navy} sw={2.4} />Importar CSV
+        </button>
+      }>Gimnasio</SectionTitle>
       <AdminRoutines toast={showToast} />
       <GymAveragesSection />
+      {importOpen && <BulkMarksUpload onClose={() => setImportOpen(false)} />}
       <Toast msg={toast} />
     </div>
   );

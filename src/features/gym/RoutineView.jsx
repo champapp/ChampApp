@@ -11,6 +11,8 @@ const SECTION_TONES = {
   'FÍSICO': { bg: 'rgba(30,158,106,0.15)', fg: CC.good },
   FISICO: { bg: 'rgba(30,158,106,0.15)', fg: CC.good },
   CONDICIONER: { bg: 'rgba(30,158,106,0.15)', fg: CC.good },
+  'EVALUACIÓN': { bg: 'rgba(224,82,78,0.13)', fg: CC.bad },
+  EVALUACION: { bg: 'rgba(224,82,78,0.13)', fg: CC.bad },
 };
 
 function DetailChip({ label, value, strong }) {
