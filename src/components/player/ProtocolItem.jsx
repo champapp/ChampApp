@@ -10,7 +10,7 @@ export function ProtocolItem({ pr, onDelete }) {
         <Icon name="check" size={14} color={CC.navy} sw={2.5} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, lineHeight: 1.4 }}>{pr.text}</div>
+        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{pr.text}</div>
         <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, color: CC.faint, marginTop: 3 }}>{pr.by || 'Fisioterapia'} · {fmtDate(pr.date)}</div>
       </div>
       {onDelete && (
