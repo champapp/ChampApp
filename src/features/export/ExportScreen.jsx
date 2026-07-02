@@ -129,12 +129,13 @@ export function ExportScreen() {
     const sections = catList.map((cat) => {
       const catPlayers = players.filter((p) => p.cat === cat).sort((a, b) => a.name.localeCompare(b.name));
       if (!catPlayers.length) return null;
+      // Solo prácticas donde se pasó lista (al menos un registro de asistencia)
+      const practicesWithLista = new Set(attendance.map((a) => a.practice_id));
       const catPractices = practices
-        .filter((pr) => pr.cat === cat && pr.date >= fromDate && pr.date <= toDate)
+        .filter((pr) => pr.cat === cat && pr.date >= fromDate && pr.date <= toDate && practicesWithLista.has(pr.id))
         .sort((a, b) => a.date.localeCompare(b.date));
 
       // Agrupar prácticas por fecha (puede haber varias por día si hay subcategorías)
-      console.log('[PDF]', cat, 'prácticas raw:', catPractices.map((p) => ({ id: p.id, date: p.date, sub: p.sub })));
       const dateMap = new Map();
       catPractices.forEach((pr) => {
         const key = String(pr.date).slice(0, 10);

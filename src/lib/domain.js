@@ -134,14 +134,21 @@ export function gymAttDates({ gymChecks, playerId, month = 'all' }) {
 export function playerAttendance({ practices, attendance, matches, rsvp, player, today = todayISO(), month = 'all' }) {
   let present = 0;
   let total = 0;
-  const practiceById = new Map(practices.map((p) => [p.id, p]));
 
-  attendance.forEach((a) => {
-    if (a.player_id !== player.id) return;
-    const pr = practiceById.get(a.practice_id);
-    if (!pr || !inMonth(pr.date, month)) return;
+  // Solo cuentan prácticas donde se pasó lista (al menos un registro de asistencia)
+  const practicesWithLista = new Set(attendance.map((a) => a.practice_id));
+  // Registros propios del jugador: practice_id → 'P' | 'A'
+  const playerRecs = new Map(
+    attendance.filter((a) => a.player_id === player.id).map((a) => [a.practice_id, a.status])
+  );
+
+  practices.forEach((pr) => {
+    if (pr.cat !== player.cat) return;
+    if ((pr.sub ?? null) !== (player.sub ?? null)) return;
+    if (!inMonth(pr.date, month)) return;
+    if (!practicesWithLista.has(pr.id)) return;
     total++;
-    if (a.status === 'P') present++;
+    if (playerRecs.get(pr.id) === 'P') present++;
   });
 
   matchAttEvents({ matches, rsvp, player, today, month }).forEach((e) => {
@@ -215,15 +222,19 @@ export function leastAttenders({ practices, attendance, matches, rsvp, players, 
 
 // historial cronológico de un jugador: [{ date, status, type }]
 export function playerHistory({ practices, attendance, matches, rsvp, gymChecks, player, today = todayISO() }) {
-  const practiceById = new Map(practices.map((p) => [p.id, p]));
+  // Solo prácticas donde se pasó lista (al menos un registro de asistencia)
+  const practicesWithLista = new Set(attendance.map((a) => a.practice_id));
+  const playerRecs = new Map(
+    attendance.filter((a) => a.player_id === player.id).map((a) => [a.practice_id, a.status])
+  );
 
-  const prac = attendance
-    .filter((a) => a.player_id === player.id)
-    .map((a) => {
-      const pr = practiceById.get(a.practice_id);
-      return pr ? { date: pr.date, status: a.status, type: 'practice' } : null;
-    })
-    .filter(Boolean);
+  const prac = practices
+    .filter((pr) =>
+      pr.cat === player.cat &&
+      (pr.sub ?? null) === (player.sub ?? null) &&
+      practicesWithLista.has(pr.id)
+    )
+    .map((pr) => ({ date: pr.date, status: playerRecs.get(pr.id) ?? 'A', type: 'practice' }));
 
   const mt = matchAttEvents({ matches, rsvp, player, today });
 
