@@ -40,6 +40,9 @@ export function ShopScreen({ isAdmin, player }) {
 
   const items = itemsQ.data ?? [];
   const canEdit = isAdmin && editing;
+  // En modo vista (jugadores y admin sin editar) los más nuevos van primero;
+  // en modo admin-edición se respeta el orden manual (sort ASC).
+  const displayItems = canEdit ? items : [...items].sort((a, b) => b.id - a.id);
   const detailItem = items.find((x) => x.id === detailId);
 
   function handleDelete(id) {
@@ -54,7 +57,7 @@ export function ShopScreen({ isAdmin, player }) {
 
   function grid(list) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
         {list.map((it) => {
           const idx = items.indexOf(it);
           return (
@@ -70,7 +73,7 @@ export function ShopScreen({ isAdmin, player }) {
   }
 
   let body;
-  if (items.length === 0) {
+  if (displayItems.length === 0) {
     body = (
       <Card pad={28} style={{ textAlign: 'center' }}>
         <div style={{ color: CC.faint, marginBottom: 10, display: 'flex', justifyContent: 'center' }}><Icon name="bag" size={36} /></div>
@@ -79,17 +82,17 @@ export function ShopScreen({ isAdmin, player }) {
       </Card>
     );
   } else if (catF !== 'all') {
-    const list = items.filter((it) => shopCatOf(it) === catF);
+    const list = displayItems.filter((it) => shopCatOf(it) === catF);
     body = list.length ? grid(list) : <Empty t={'Sin productos en "' + catF + '"'} />;
   } else {
-    const cats = SHOP_CATEGORIES.filter((c) => items.some((it) => shopCatOf(it) === c));
+    const cats = SHOP_CATEGORIES.filter((c) => displayItems.some((it) => shopCatOf(it) === c));
     if (cats.length <= 1) {
-      body = grid(items);
+      body = grid(displayItems);
     } else {
       body = (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {cats.map((c) => {
-            const list = items.filter((it) => shopCatOf(it) === c);
+            const list = displayItems.filter((it) => shopCatOf(it) === c);
             return (
               <div key={c}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
