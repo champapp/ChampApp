@@ -125,7 +125,7 @@ export function AttendanceScreen() {
     const att = playerAttendance({ practices, attendance, matches, rsvp, player, today });
     const history = playerHistory({ practices, attendance, matches, rsvp, gymChecks, player, today });
     const streak = playerStreak(history.filter((e) => e.type !== 'gym'));
-    const categoryAvg = groupAttendance({ practices, attendance, cat: player.cat, sub: player.sub });
+    const categoryAvg = groupAttendance({ practices, attendance, cat: player.cat, sub: player.sub, players });
     const gymAtt = gymAttendance({ gymChecks, routines, player, today });
     const categoryGymAvg = categoryGymAttendance({ gymChecks, routines, players, cat: player.cat, sub: player.sub, today });
 

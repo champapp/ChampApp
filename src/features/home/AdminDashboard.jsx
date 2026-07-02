@@ -81,8 +81,8 @@ export function AdminDashboard({ players, practices, attendance, matches, rsvp, 
   const [rankCat, setRankCat] = useState('M15');
 
   const ov = overall({ practices, attendance, players, month });
-  const byCat = categoryAttendance({ practices, attendance, month }).filter((c) => c.total > 0).sort((a, b) => b.rate - a.rate);
-  const trend = monthlyTrend({ practices, attendance, cat: trendCat });
+  const byCat = categoryAttendance({ practices, attendance, month, players }).filter((c) => c.total > 0).sort((a, b) => b.rate - a.rate);
+  const trend = monthlyTrend({ practices, attendance, cat: trendCat, players });
   const ranking = leastAttenders({ practices, attendance, matches, rsvp, players, cat: rankCat, sub: null, month, limit: 6 });
 
   // Jugadores activos por categoría

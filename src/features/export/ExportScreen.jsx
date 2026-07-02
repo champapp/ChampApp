@@ -87,7 +87,7 @@ export function ExportScreen() {
 
   function expCats() {
     const rows = [['Categoría', 'Descripción', 'Presencias', 'Registros totales', '% Asistencia', 'Prácticas']];
-    categoryAttendance({ practices, attendance, month }).forEach((c) => {
+    categoryAttendance({ practices, attendance, month, players }).forEach((c) => {
       if (c.total) rows.push([c.id, c.full, c.present, c.total, fmtPct(c.rate), c.sessions]);
     });
     downloadCSV(`asistencia_categorias_${mLabel}.csv`, rows);

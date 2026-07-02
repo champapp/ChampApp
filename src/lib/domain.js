@@ -98,10 +98,11 @@ export function mondayOf(iso) {
 
 // ── Asistencia ──────────────────────────────────────────────
 
-// agrupa filas de `attendance` por practice_id
-function groupAttendanceByPractice(attendance) {
+// agrupa filas de `attendance` por practice_id, excluyendo archivados si se pasa activePlayerIds
+function groupAttendanceByPractice(attendance, activePlayerIds = null) {
   const map = new Map();
   attendance.forEach((a) => {
+    if (activePlayerIds && !activePlayerIds.has(a.player_id)) return;
     if (!map.has(a.practice_id)) map.set(a.practice_id, []);
     map.get(a.practice_id).push(a);
   });
@@ -160,11 +161,13 @@ export function playerAttendance({ practices, attendance, matches, rsvp, player,
 }
 
 // asistencia a cancha agregada de un grupo (cat + sub opcional)
-export function groupAttendance({ practices, attendance, cat, sub, month = 'all' }) {
+// players: si se pasa, excluye registros de jugadores archivados
+export function groupAttendance({ practices, attendance, cat, sub, month = 'all', players = null }) {
   let present = 0;
   let total = 0;
   let sessions = 0;
-  const byPractice = groupAttendanceByPractice(attendance);
+  const activePlayerIds = players ? new Set(players.map((p) => p.id)) : null;
+  const byPractice = groupAttendanceByPractice(attendance, activePlayerIds);
 
   practices.forEach((pr) => {
     if (pr.cat !== cat) return;
@@ -183,17 +186,18 @@ export function groupAttendance({ practices, attendance, cat, sub, month = 'all'
 }
 
 // asistencia a cancha agregada de cada categoría
-export function categoryAttendance({ practices, attendance, month = 'all' }) {
+export function categoryAttendance({ practices, attendance, month = 'all', players = null }) {
   return CATS.map((c) => ({
     ...c,
-    ...groupAttendance({ practices, attendance, cat: c.id, sub: null, month }),
+    ...groupAttendance({ practices, attendance, cat: c.id, sub: null, month, players }),
   }));
 }
 
 // evolución de la asistencia mes a mes (últimos `months` meses)
-export function monthlyTrend({ practices, attendance, cat = 'all', today = todayISO(), months = 5 }) {
+export function monthlyTrend({ practices, attendance, cat = 'all', today = todayISO(), months = 5, players = null }) {
   const range = recentMonths(today, months);
-  const byPractice = groupAttendanceByPractice(attendance);
+  const activePlayerIds = players ? new Set(players.map((p) => p.id)) : null;
+  const byPractice = groupAttendanceByPractice(attendance, activePlayerIds);
 
   return range.map((m) => {
     let present = 0;
@@ -285,7 +289,8 @@ export function overall({ practices, attendance, players, month = 'all' }) {
   let present = 0;
   let total = 0;
   const sessionSet = new Set();
-  const byPractice = groupAttendanceByPractice(attendance);
+  const activePlayerIds = new Set(players.map((p) => p.id));
+  const byPractice = groupAttendanceByPractice(attendance, activePlayerIds);
 
   practices.forEach((pr) => {
     if (!inMonth(pr.date, month)) return;
@@ -336,7 +341,7 @@ export function gymMarksHistory(gymMarks, playerId) {
 // promedios de un grupo (asistencia a cancha, físico, marcas de gimnasio) para comparativas
 export function categoryAverages({ practices, attendance, players, gymMarks, cat, sub, month = 'all' }) {
   const roster = players.filter((p) => p.cat === cat && (sub == null || p.sub === sub));
-  const rate = groupAttendance({ practices, attendance, cat, sub, month }).rate;
+  const rate = groupAttendance({ practices, attendance, cat, sub, month, players }).rate;
 
   let peso = 0;
   let talla = 0;
