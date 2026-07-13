@@ -31,11 +31,9 @@ function App() {
       />
     );
   }
-  if (!session) return <Login />;
-  // Hay sesión pero todavía no sabemos el rol/perfil (instante entre el
-  // login y la respuesta de Supabase): esperar antes de mostrar la app, para
-  // no renderizar AppShell sin esos datos.
-  if (!role) return <LoadingScreen />;
+  // Sin sesión, o sesión existe pero el perfil no se pudo cargar (ej. error
+  // de red al arrancar): ir al login en ambos casos, nunca quedar colgado.
+  if (!session || !role) return <Login />;
   return <AppShell />;
 }
 
