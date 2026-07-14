@@ -54,9 +54,21 @@ export function useAttendance() {
   return useQuery({
     queryKey: ['attendance'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('attendance').select('*').limit(20000);
-      if (error) throw error;
-      return data ?? [];
+      const pageSize = 1000;
+      let from = 0;
+      const all = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from('attendance')
+          .select('*')
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 }
