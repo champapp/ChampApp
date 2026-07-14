@@ -51,7 +51,14 @@ export function usePractices() {
 }
 
 export function useAttendance() {
-  return useQuery({ queryKey: ['attendance'], queryFn: () => selectAll('attendance') });
+  return useQuery({
+    queryKey: ['attendance'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('attendance').select('*').limit(20000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 }
 
 export function useMatches() {
