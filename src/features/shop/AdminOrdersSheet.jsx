@@ -163,8 +163,8 @@ export function AdminOrdersSheet({ onClose, toast }) {
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
-          <div style={{ padding: '14px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ padding: '14px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
 
           {resQ.isLoading && <div style={{ textAlign: 'center', padding: 24, fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>}
           {!resQ.isLoading && filtered.length === 0 && (
@@ -178,7 +178,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
             const isPending = r.status === 'pendiente';
             const isPaid = r.status === 'pagado';
             return (
-              <div key={r.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: `1px solid ${CC.line}` }}>
+              <div key={r.id} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${CC.line}`, marginBottom: 10, overflow: 'hidden' }}>
                 {/* fila principal */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: CC.paper, borderBottom: `1px solid ${CC.line}` }}>
                   <div style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0, background: photo ? `center/cover url(${photo})` : 'rgba(14,58,92,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -188,13 +188,13 @@ export function AdminOrdersSheet({ onClose, toast }) {
                     <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{itemName}</div>
                     <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted, marginTop: 1 }}>Talle {r.size} · {r.quantity} u.</div>
                   </div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, background: st.bg, fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: st.color, whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, background: st.bg, fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: st.color, whiteSpace: 'nowrap', flexShrink: 0 }}>
                     {st.label}
                   </div>
                 </div>
                 {/* detalles */}
-                <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 10 }}>
                     <div>
                       <div style={lblStyle}>Jugador</div>
                       <div style={valStyle}>{r.contact_name || '—'}</div>
@@ -216,7 +216,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
                   </div>
                   {/* acciones */}
                   {(isPending || isPaid) && (
-                    <div style={{ display: 'flex', gap: 7, marginTop: 4, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
                       {isPending && (
                         <button onClick={() => markPaid(r)} style={actionBtn(CC.navy, '#fff')}>
                           <Icon name="check" size={13} color="#fff" sw={2.4} />Marcar pagado
