@@ -17,6 +17,15 @@ const STATUS_FILTERS = [
   { id: 'cancelado', label: 'Cancelado' },
 ];
 
+// Normaliza un número uruguayo al formato internacional para wa.me.
+// "099 205 500" → "59899205500", "+598 99..." → "59899205500"
+function waPhone(raw) {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('598')) return digits;
+  if (digits.startsWith('0')) return '598' + digits.slice(1);
+  return '598' + digits;
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -229,7 +238,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
                       )}
                       {isPending && r.contact_phone && (
                         <a
-                          href={`https://wa.me/${r.contact_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${r.contact_name || ''}! Te escribimos del Club Champagnat por tu pedido de ${itemName} (talle ${r.size}). `)}`}
+                          href={`https://wa.me/${waPhone(r.contact_phone)}?text=${encodeURIComponent(`Hola ${r.contact_name || ''}! Te escribimos del Club Champagnat por tu pedido de ${itemName} (talle ${r.size}). `)}`}
                           target="_blank" rel="noopener noreferrer"
                           style={{ ...actionBtn('#25D366', '#fff'), textDecoration: 'none' }}
                         >
