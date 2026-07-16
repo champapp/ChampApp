@@ -6,27 +6,36 @@ import { unsubscribePush } from '../../lib/push';
 import { AuthContext } from './auth-context';
 
 // Carga el rol (admin/jugador) y, si es jugador, su fila de `players`.
+// Si Supabase no responde en 8 s devuelve null para no quedar colgado.
 async function loadProfile(session) {
   if (!session) return { role: null, player: null };
 
-  const { data: roleRow } = await supabase
-    .from('user_roles')
-    .select('role, player_id')
-    .eq('user_id', session.user.id)
-    .maybeSingle();
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), 8000)
+  );
 
-  if (!roleRow) return { role: null, player: null };
-
-  if (roleRow.role === 'player' && roleRow.player_id) {
-    const { data: playerRow } = await supabase
-      .from('players')
-      .select('*')
-      .eq('id', roleRow.player_id)
+  const fetch = async () => {
+    const { data: roleRow } = await supabase
+      .from('user_roles')
+      .select('role, player_id')
+      .eq('user_id', session.user.id)
       .maybeSingle();
-    return { role: 'player', player: playerRow ?? null };
-  }
 
-  return { role: roleRow.role, player: null };
+    if (!roleRow) return { role: null, player: null };
+
+    if (roleRow.role === 'player' && roleRow.player_id) {
+      const { data: playerRow } = await supabase
+        .from('players')
+        .select('*')
+        .eq('id', roleRow.player_id)
+        .maybeSingle();
+      return { role: 'player', player: playerRow ?? null };
+    }
+
+    return { role: roleRow.role, player: null };
+  };
+
+  return Promise.race([fetch(), timeout]);
 }
 
 // Guarda en este dispositivo quién inició sesión (sin PIN ni tokens), para
