@@ -151,7 +151,11 @@ export function AttendanceScreen() {
   const roster = players
     .filter((p) => p.cat === catId && (p.sub ?? null) === (sub ?? null))
     .slice()
-    .sort((a, b) => (a.apellido || '').localeCompare(b.apellido || '') || (a.nombre || '').localeCompare(b.nombre || ''));
+    .sort((a, b) =>
+      (a.apellido || '').localeCompare(b.apellido || '', 'es', { sensitivity: 'base' })
+      || (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' })
+      || (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' })
+    );
 
   const editing = draft != null;
   const records = editing
@@ -188,12 +192,12 @@ export function AttendanceScreen() {
     if (!current) return;
     const recs = {};
     attendance.forEach((a) => { if (a.practice_id === current.id) recs[a.player_id] = a.status; });
-    if (!Object.keys(recs).length) roster.forEach((p) => { recs[p.id] = 'P'; });
+    if (!Object.keys(recs).length) roster.forEach((p) => { recs[p.id] = 'A'; });
     setDraft({ practiceId: current.id, isNew: false, date: current.date, records: recs });
   }
   function startNew(dateStr) {
     const recs = {};
-    roster.forEach((p) => { recs[p.id] = 'P'; });
+    roster.forEach((p) => { recs[p.id] = 'A'; });
     setDraft({ practiceId: null, isNew: true, date: dateStr, records: recs });
   }
   function toggle(pid) {
