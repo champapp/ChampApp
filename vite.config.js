@@ -33,6 +33,10 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // Listeners de notificaciones push (push / notificationclick).
         importScripts: ['push-sw.js'],
+        // Fuerza al nuevo SW a tomar control inmediato sin esperar que
+        // el usuario cierre todas las pestañas.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
