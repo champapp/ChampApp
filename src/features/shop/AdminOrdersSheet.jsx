@@ -163,7 +163,8 @@ export function AdminOrdersSheet({ onClose, toast }) {
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '14px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <div style={{ padding: '14px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {resQ.isLoading && <div style={{ textAlign: 'center', padding: 24, fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>}
           {!resQ.isLoading && filtered.length === 0 && (
@@ -237,6 +238,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
           })}
 
           <ConfigSection toast={toast} />
+          </div>
         </div>
       </div>
     </div>
