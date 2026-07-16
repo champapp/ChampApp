@@ -191,8 +191,8 @@ export function AttendanceScreen() {
   function startEdit() {
     if (!current) return;
     const recs = {};
+    roster.forEach((p) => { recs[p.id] = 'A'; });
     attendance.forEach((a) => { if (a.practice_id === current.id) recs[a.player_id] = a.status; });
-    if (!Object.keys(recs).length) roster.forEach((p) => { recs[p.id] = 'A'; });
     setDraft({ practiceId: current.id, isNew: false, date: current.date, records: recs });
   }
   function startNew(dateStr) {
