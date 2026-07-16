@@ -136,7 +136,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
       <div style={{ position: 'relative', background: CC.paper, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '94%', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(0,0,0,0.3)' }}>
 
         {/* header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 16px 12px', borderBottom: `1px solid ${CC.line}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 16px 12px', borderBottom: `1px solid ${CC.line}`, flexShrink: 0 }}>
           <div style={{ width: 38, height: 38, borderRadius: 11, background: CC.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name="bag" size={20} color={CC.gold} sw={2.3} />
           </div>
@@ -155,7 +155,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
         </div>
 
         {/* filtros */}
-        <div style={{ display: 'flex', gap: 7, overflowX: 'auto', padding: '10px 16px 0', paddingBottom: 10, borderBottom: `1px solid ${CC.line}` }}>
+        <div style={{ display: 'flex', gap: 7, overflowX: 'auto', padding: '10px 16px 0', paddingBottom: 10, borderBottom: `1px solid ${CC.line}`, flexShrink: 0 }}>
           {STATUS_FILTERS.map((sf) => (
             <Chip key={sf.id} active={filter === sf.id} onClick={() => setFilter(sf.id)}>
               {sf.label}{sf.id !== 'all' && counts[sf.id] > 0 ? ` (${counts[sf.id]})` : ''}
@@ -163,7 +163,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto', padding: '14px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ overflowY: 'auto', flex: 1, minHeight: 0, padding: '14px 16px', paddingBottom: 'max(20px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {resQ.isLoading && <div style={{ textAlign: 'center', padding: 24, fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>}
           {!resQ.isLoading && filtered.length === 0 && (
