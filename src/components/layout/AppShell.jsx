@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { CC, Icon, Card } from '../../ui';
 import { useAuth } from '../../features/auth/useAuth';
 import { useRealtimeSync } from '../../lib/useRealtimeSync';
@@ -7,17 +7,20 @@ import { AppHeader } from './AppHeader';
 import { BottomNav } from './BottomNav';
 import { NotificationSettingsSheet } from '../../features/settings/NotificationSettingsSheet';
 import { PlayerHome } from '../../features/home/PlayerHome';
-import { AdminHome } from '../../features/home/AdminHome';
 import { AttendanceScreen } from '../../features/attendance/AttendanceScreen';
-import { PlayersScreen } from '../../features/players/PlayersScreen';
-import { MatchesScreen } from '../../features/matches/MatchesScreen';
 import { CalendarScreen } from '../../features/matches/CalendarScreen';
 import { GymScreen } from '../../features/gym/GymScreen';
-import { AdminGymScreen } from '../../features/gym/AdminGymScreen';
 import { PlayerHealthScreen } from '../../features/health/PlayerHealthScreen';
-import { AdminHealthScreen } from '../../features/health/AdminHealthScreen';
 import { ShopScreen } from '../../features/shop/ShopScreen';
-import { ExportScreen } from '../../features/export/ExportScreen';
+
+// Pantallas exclusivas de admin: se cargan solo cuando un admin las visita,
+// para no incluirlas en el bundle inicial que descarga cada jugador.
+const AdminHome = lazy(() => import('../../features/home/AdminHome').then((m) => ({ default: m.AdminHome })));
+const PlayersScreen = lazy(() => import('../../features/players/PlayersScreen').then((m) => ({ default: m.PlayersScreen })));
+const MatchesScreen = lazy(() => import('../../features/matches/MatchesScreen').then((m) => ({ default: m.MatchesScreen })));
+const AdminGymScreen = lazy(() => import('../../features/gym/AdminGymScreen').then((m) => ({ default: m.AdminGymScreen })));
+const AdminHealthScreen = lazy(() => import('../../features/health/AdminHealthScreen').then((m) => ({ default: m.AdminHealthScreen })));
+const ExportScreen = lazy(() => import('../../features/export/ExportScreen').then((m) => ({ default: m.ExportScreen })));
 
 const ADMIN_SCREENS = {
   home: { title: 'Inicio', icon: 'home' },
@@ -50,6 +53,16 @@ function readDeepLinkFromUrl() {
   const playerId = params.get('playerId');
   window.history.replaceState(null, '', window.location.pathname);
   return { tab, playerId: playerId ? Number(playerId) : null };
+}
+
+function ScreenLoading() {
+  return (
+    <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: CC.muted, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+        Cargando…
+      </div>
+    </div>
+  );
 }
 
 function PlaceholderScreen({ title, icon }) {
@@ -127,7 +140,7 @@ export function AppShell() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: CC.paper }}>
       <AppHeader onOpenAlertPlayer={openPlayerFromAlert} onOpenSettings={() => setShowNotifSettings(true)} />
       <div style={{ flex: 1 }}>
-        {content}
+        <Suspense fallback={<ScreenLoading />}>{content}</Suspense>
       </div>
       <BottomNav tab={tab} setTab={handleSetTab} isAdmin={isAdmin} />
       {showNotifSettings && <NotificationSettingsSheet onClose={() => setShowNotifSettings(false)} />}
