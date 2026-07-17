@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { CC, Icon, SectionTitle } from '../../ui';
 import { useUploadGalleryPhoto, useSavePlayerGallery } from '../../lib/queries';
 
@@ -59,10 +59,12 @@ export function PlayerGallery({ player, isAdmin, toast }) {
   const upload = useUploadGalleryPhoto();
   const save = useSavePlayerGallery();
 
-  // Sincroniza si el servidor refresca los datos del jugador
-  useEffect(() => {
+  // Sincroniza si el servidor refresca los datos del jugador (ajuste en render, no en efecto)
+  const [syncedGallery, setSyncedGallery] = useState(player.gallery_photos);
+  if (syncedGallery !== player.gallery_photos) {
+    setSyncedGallery(player.gallery_photos);
     setPhotos(normalizePhotos(player.gallery_photos));
-  }, [player.gallery_photos]);
+  }
 
   function persist(next, successMsg) {
     setPhotos(next);

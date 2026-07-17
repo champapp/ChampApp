@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { CC, Icon, Card } from '../../ui';
+import { CC, Icon } from '../../ui';
 import { usePlayers } from '../../lib/queries';
 import { supabase } from '../../lib/supabaseClient';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 function parseDate(raw) {
   const s = raw.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
   return null;
 }
@@ -60,6 +60,7 @@ export function BulkMarksUpload({ onClose }) {
     const byUsername = new Map(players.map((p) => [p.username, p]));
 
     const toInsert = [];
+    const rowsMeta = [];
     for (const row of rows) {
       const player = byUsername.get(row.username);
       if (!player) {
@@ -76,12 +77,12 @@ export function BulkMarksUpload({ onClose }) {
         newResults.push({ row, status: 'error', msg: `Valor inválido: "${row.valor}"` });
         continue;
       }
-      toInsert.push({ _row: row, player_id: player.id, exercise: row.ejercicio, value, unit: row.unidad || '', date });
+      toInsert.push({ player_id: player.id, exercise: row.ejercicio, value, unit: row.unidad || '', date });
+      rowsMeta.push(row);
     }
 
     // Insertar en bloque si no hay errores graves, o de a batch de 50
-    const validRows = toInsert.map(({ _row, ...rest }) => rest);
-    const rowsMeta = toInsert.map(({ _row }) => _row);
+    const validRows = toInsert;
 
     if (validRows.length > 0) {
       try {

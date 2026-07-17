@@ -59,7 +59,6 @@ export function NextMatchCard({ match: m, player, collapsible = false }) {
     const firstTime = psTimes[0] || m17Times[0];
     const timeStr = firstTime ? firstTime.time : m.time ? m.time + ' hs' : null;
     const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const SHORT_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const [y, mo, d] = m.date.split('-').map(Number);
     const day = new Date(y, mo - 1, d).getDay();
     const dateStr = `${SHORT_DAYS[day]} ${d}/${mo}`;

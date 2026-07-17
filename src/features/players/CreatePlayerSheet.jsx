@@ -49,7 +49,7 @@ export function CreatePlayerSheet({ onClose, onCreated, toast }) {
   function save() {
     if (!f.nombre.trim() || !f.apellido.trim()) { toast('Ingresá nombre y apellido'); return; }
     if (!f.username.trim()) { toast('Ingresá el usuario de acceso'); return; }
-    if (!/^[\w.\-]+$/.test(f.username.trim())) { toast('El usuario solo puede tener letras, números, puntos y guiones'); return; }
+    if (!/^[\w.-]+$/.test(f.username.trim())) { toast('El usuario solo puede tener letras, números, puntos y guiones'); return; }
     if (f.pin1.length !== 4) { toast('El PIN debe tener 4 dígitos'); return; }
     if (f.pin1 !== f.pin2) { toast('Los PIN no coinciden'); return; }
 

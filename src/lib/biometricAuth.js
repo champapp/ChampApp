@@ -24,7 +24,7 @@ export function hasBiometricCredential(username) {
 }
 
 export function clearBiometricCredential(username) {
-  try { localStorage.removeItem(credKey(username)); } catch {}
+  try { localStorage.removeItem(credKey(username)); } catch (err) { console.warn('[biometricAuth] no se pudo borrar la credencial', err); }
 }
 
 export async function isBiometricAvailable() {
@@ -55,7 +55,12 @@ export async function registerBiometric(username) {
     },
   });
 
-  try { localStorage.setItem(credKey(username), bufferToB64(cred.rawId)); } catch {}
+  try {
+    localStorage.setItem(credKey(username), bufferToB64(cred.rawId));
+  } catch (err) {
+    console.error('[biometricAuth] credencial creada pero no se pudo guardar', err);
+    throw Object.assign(new Error('storage-failed'), { name: 'StorageFailed', cause: err });
+  }
 }
 
 export async function verifyBiometric(username) {

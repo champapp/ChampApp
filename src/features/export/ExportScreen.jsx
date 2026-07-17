@@ -160,7 +160,7 @@ export function ExportScreen() {
 
     if (!sections.length) { showToast('Sin jugadores para exportar'); return; }
 
-    const fmtD = (iso) => { const [y, m, d] = iso.split('-'); return `${d}/${m}`; };
+    const fmtD = (iso) => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Planilla de Asistencia · Champagnat Rugby</title>
 <style>

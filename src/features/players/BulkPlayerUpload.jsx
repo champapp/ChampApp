@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { CC, Icon, Card } from '../../ui';
+import { CC, Icon } from '../../ui';
 import { CATS, catById } from '../../lib/domain';
 import { useCreatePlayer } from '../../lib/queries';
 
