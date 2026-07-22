@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Ring, Empty, Toast, fmtPct, fmtDate, rateColor } from '../../ui';
 import { InjuryBadge } from '../../components/player/InjuryBadge';
 import { StreakCard } from '../../components/player/StreakCard';
-import { ageFromBirth, playerAttendance, nextMatch, latestGymMarks, playerHistory } from '../../lib/domain';
+import { MonthlySummaryCard } from '../../components/player/MonthlySummaryCard';
+import { ageFromBirth, playerAttendance, nextMatch, latestGymMarks, playerHistory, todayISO } from '../../lib/domain';
 import {
-  usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymChecks, useGymMarks, usePlayerInjury, useUpdatePlayer, useAdminDocs, usePlayerPin,
+  usePlayers, usePractices, useAttendance, useMatches, useRsvp, useGymChecks, useGymMarks, useRoutines, usePlayerInjury, useUpdatePlayer, useAdminDocs, usePlayerPin,
 } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { EditPlayerSheet } from './EditPlayerSheet';
@@ -57,6 +58,7 @@ export function PlayerProfileScreen({ playerId, onBack }) {
   const [phys, setPhys] = useState(null);
   const [showPin, setShowPin] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [showMonthly, setShowMonthly] = useState(false);
 
   const playersQ = usePlayers();
   const practicesQ = usePractices();
@@ -65,12 +67,13 @@ export function PlayerProfileScreen({ playerId, onBack }) {
   const rsvpQ = useRsvp();
   const gymChecksQ = useGymChecks();
   const gymMarksQ = useGymMarks();
+  const routinesQ = useRoutines();
   const injuryQ = usePlayerInjury(playerId);
   const adminDocsQ = useAdminDocs(playerId);
   const pinQ = usePlayerPin(playerId);
   const updateMutation = useUpdatePlayer();
 
-  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymChecksQ, gymMarksQ, injuryQ, adminDocsQ];
+  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymChecksQ, gymMarksQ, routinesQ, injuryQ, adminDocsQ];
   if (queries.some((x) => x.isLoading)) return <ProfileLoading onBack={onBack} />;
 
   const p = (playersQ.data ?? []).find((x) => x.id === playerId);
@@ -158,8 +161,12 @@ export function PlayerProfileScreen({ playerId, onBack }) {
         {/* racha de asistencia */}
         <StreakCard history={history} />
 
-        {/* asistencia */}
-        <Card pad={14} style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* asistencia — tocar para desplegar el resumen mensual */}
+        <Card
+          pad={14}
+          onClick={() => setShowMonthly((v) => !v)}
+          style={{ marginBottom: showMonthly ? 10 : 16, display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}
+        >
           <Ring value={att.rate} size={64} stroke={8} color={rateColor(att.rate)} track="rgba(14,58,92,0.08)">
             <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, color: CC.ink }}>{fmtPct(att.rate)}</div>
           </Ring>
@@ -167,7 +174,23 @@ export function PlayerProfileScreen({ playerId, onBack }) {
             <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.ink, textTransform: 'uppercase', letterSpacing: 0.4 }}>Asistencia</div>
             <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.muted, marginTop: 2 }}>{att.present} presentes de {att.total} prácticas registradas</div>
           </div>
+          <div style={{ transform: showMonthly ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'flex', flexShrink: 0 }}>
+            <Icon name="chevDown" size={18} color={CC.muted} sw={2.4} />
+          </div>
         </Card>
+
+        {showMonthly && (
+          <MonthlySummaryCard
+            practices={practicesQ.data ?? []}
+            attendance={attendanceQ.data ?? []}
+            matches={matchesQ.data ?? []}
+            rsvp={rsvpQ.data ?? []}
+            gymChecks={gymChecksQ.data ?? []}
+            routines={routinesQ.data ?? []}
+            player={p}
+            today={todayISO()}
+          />
+        )}
 
         {/* documentación administrativa */}
         <AdminDocsCard player={p} canEdit toast={showToast} />
