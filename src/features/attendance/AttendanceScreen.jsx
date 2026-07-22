@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  CC, Icon, Card, Chip, Empty, Ring, Avatar, SectionTitle, Toast, fmtDate, fmtPct, rateColor,
+  CC, Icon, Card, Chip, Empty, Ring, Avatar, SectionTitle, Segmented, Toast, fmtDate, fmtPct, monthName, rateColor,
 } from '../../ui';
 import { useAuth } from '../auth/useAuth';
 import {
@@ -8,8 +8,8 @@ import {
   useActiveInjuries, useSaveAttendance, useDeletePractice,
 } from '../../lib/queries';
 import {
-  CATS, catById, todayISO, ageFromBirth, playerAttendance, playerHistory, playerStreak,
-  groupAttendance, gymAttendance, categoryGymAttendance,
+  CATS, catById, todayISO, ageFromBirth, playerAttendance, playerMonthlyBreakdown, playerHistory, playerStreak,
+  groupAttendance, gymAttendance, categoryGymAttendance, recentMonths,
 } from '../../lib/domain';
 import { InjuryDot } from '../../components/player/InjuryDot';
 import { CompareCard } from '../../components/player/CompareCard';
@@ -65,6 +65,49 @@ function MyAttendanceSummary({ att, streak }) {
             <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, letterSpacing: 0.4, textTransform: 'uppercase' }}>Mejor racha</div>
           </div>
         </div>
+      </div>
+    </Card>
+  );
+}
+
+// fila de un resumen mensual: label + barra + "presentes/total · %"
+function MonthlyBar({ label, stat }) {
+  const { present, total, rate } = stat;
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+        <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 13.5, color: CC.ink }}>{label}</span>
+        <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted }}>
+          {total ? `${present}/${total} · ${fmtPct(rate)}` : 'Sin datos'}
+        </span>
+      </div>
+      <div style={{ height: 10, background: 'rgba(14,58,92,0.07)', borderRadius: 5, overflow: 'hidden' }}>
+        <div style={{ width: Math.round(rate * 100) + '%', height: '100%', borderRadius: 5, background: rateColor(rate), transition: 'width .6s cubic-bezier(.2,.8,.2,1)' }} />
+      </div>
+    </div>
+  );
+}
+
+// resumen mensual del jugador: % de prácticas, partidos y gimnasio de un mes elegido
+function MonthlySummaryCard({ practices, attendance, matches, rsvp, gymChecks, routines, player, today }) {
+  const [month, setMonth] = useState(today.slice(0, 7));
+  const options = recentMonths(today, 6).map((m) => ({ id: m, label: monthName(m).slice(0, 3) }));
+  const b = playerMonthlyBreakdown({ practices, attendance, matches, rsvp, gymChecks, routines, player, today, month });
+  const showGym = b.gym.total > 0;
+
+  return (
+    <Card pad={16} style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <Icon name="calendar" size={19} color={CC.gold} sw={2.3} />
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 19, color: CC.ink, textTransform: 'uppercase', letterSpacing: 0.4 }}>Resumen mensual</span>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <Segmented small options={options} value={month} onChange={setMonth} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <MonthlyBar label="Prácticas" stat={b.practice} />
+        <MonthlyBar label="Partidos" stat={b.match} />
+        {showGym && <MonthlyBar label="Gimnasio" stat={b.gym} />}
       </div>
     </Card>
   );
@@ -134,6 +177,7 @@ export function AttendanceScreen() {
         <SectionTitle icon="attendance">Mi asistencia · {player.cat}{player.sub ? ' ' + player.sub : ''}</SectionTitle>
         <MyAttendanceSummary att={att} streak={streak} />
         <CompareCard player={player} attendance={att} categoryAvg={categoryAvg} gymAtt={gymAtt} categoryGymAvg={categoryGymAvg} />
+        <MonthlySummaryCard practices={practices} attendance={attendance} matches={matches} rsvp={rsvp} gymChecks={gymChecks} routines={routines} player={player} today={today} />
         <AttendanceCalendar history={history} />
         <Toast msg={toast} />
       </div>

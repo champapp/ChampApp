@@ -130,19 +130,16 @@ export function gymAttDates({ gymChecks, playerId, month = 'all' }) {
     .filter((d) => (seen.has(d) ? false : (seen.add(d), true)));
 }
 
-// asistencia a cancha de un jugador (prácticas + partidos marcados por el
-// admin). La asistencia al gimnasio se calcula por separado, ver gymAttendance.
-export function playerAttendance({ practices, attendance, matches, rsvp, player, today = todayISO(), month = 'all' }) {
-  let present = 0;
-  let total = 0;
-
-  // Solo cuentan prácticas donde se pasó lista (al menos un registro de asistencia)
+// asistencia a prácticas de un jugador (solo prácticas donde se pasó lista)
+function playerPracticeAttendance({ practices, attendance, player, month = 'all' }) {
   const practicesWithLista = new Set(attendance.map((a) => a.practice_id));
   // Registros propios del jugador: practice_id → 'P' | 'A'
   const playerRecs = new Map(
     attendance.filter((a) => a.player_id === player.id).map((a) => [a.practice_id, a.status])
   );
 
+  let present = 0;
+  let total = 0;
   practices.forEach((pr) => {
     if (pr.cat !== player.cat) return;
     if ((pr.sub ?? null) !== (player.sub ?? null)) return;
@@ -151,6 +148,15 @@ export function playerAttendance({ practices, attendance, matches, rsvp, player,
     total++;
     if (playerRecs.get(pr.id) === 'P') present++;
   });
+  return { present, total, rate: total ? present / total : 0 };
+}
+
+// asistencia a cancha de un jugador (prácticas + partidos marcados por el
+// admin). La asistencia al gimnasio se calcula por separado, ver gymAttendance.
+export function playerAttendance({ practices, attendance, matches, rsvp, player, today = todayISO(), month = 'all' }) {
+  const prac = playerPracticeAttendance({ practices, attendance, player, month });
+  let present = prac.present;
+  let total = prac.total;
 
   matchAttEvents({ matches, rsvp, player, today, month }).forEach((e) => {
     total++;
@@ -158,6 +164,24 @@ export function playerAttendance({ practices, attendance, matches, rsvp, player,
   });
 
   return { present, total, rate: total ? present / total : 0 };
+}
+
+// desglose de asistencia de un jugador en un mes (por defecto el mes en curso):
+// prácticas, partidos y gimnasio por separado, para el resumen mensual del jugador
+export function playerMonthlyBreakdown({ practices, attendance, matches, rsvp, gymChecks, routines, player, today = todayISO(), month = today.slice(0, 7) }) {
+  const practice = playerPracticeAttendance({ practices, attendance, player, month });
+
+  let mPresent = 0;
+  let mTotal = 0;
+  matchAttEvents({ matches, rsvp, player, today, month }).forEach((e) => {
+    mTotal++;
+    if (e.status === 'P') mPresent++;
+  });
+  const match = { present: mPresent, total: mTotal, rate: mTotal ? mPresent / mTotal : 0 };
+
+  const gym = gymAttendance({ gymChecks, routines, player, today, month });
+
+  return { practice, match, gym };
 }
 
 // asistencia a cancha agregada de un grupo (cat + sub opcional)
@@ -655,23 +679,31 @@ export function routineDaysPerWeek(routines, player) {
     .reduce((sum, r) => sum + (Array.isArray(r.blocks) ? r.blocks.length : 0), 0);
 }
 
-// asistencia al gimnasio de la semana actual (lunes a hoy): días de rutina
-// marcados como hechos sobre el total de días de rutina por semana
-export function gymAttendance({ gymChecks, routines, player, today = todayISO() }) {
-  const monday = mondayOf(today);
-  const total = routineDaysPerWeek(routines, player);
-  const present = gymAttDates({ gymChecks, playerId: player.id })
-    .filter((d) => d >= monday && d <= today).length;
+// semanas transcurridas de un mes (hasta `today` si es el mes en curso, o el
+// mes completo si ya terminó) — base del objetivo mensual de asistencia al gym
+function weeksElapsedInMonth(month, today) {
+  const isCurrent = month === today.slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const day = isCurrent ? Number(today.slice(8, 10)) : new Date(y, m, 0).getDate();
+  return Math.ceil(day / 7);
+}
+
+// asistencia al gimnasio del mes (por defecto el mes en curso): días de
+// rutina marcados como hechos sobre el objetivo del mes (días de rutina por
+// semana × semanas transcurridas del mes)
+export function gymAttendance({ gymChecks, routines, player, today = todayISO(), month = today.slice(0, 7) }) {
+  const total = routineDaysPerWeek(routines, player) * weeksElapsedInMonth(month, today);
+  const present = gymAttDates({ gymChecks, playerId: player.id, month }).length;
   return { present, total, rate: total ? Math.min(present / total, 1) : 0 };
 }
 
-// asistencia al gimnasio de la semana actual, agregada para un grupo (cat + sub opcional)
-export function categoryGymAttendance({ gymChecks, routines, players, cat, sub, today = todayISO() }) {
+// asistencia al gimnasio del mes, agregada para un grupo (cat + sub opcional)
+export function categoryGymAttendance({ gymChecks, routines, players, cat, sub, today = todayISO(), month = today.slice(0, 7) }) {
   const roster = players.filter((p) => p.cat === cat && (sub == null || p.sub === sub));
   let present = 0;
   let total = 0;
   roster.forEach((p) => {
-    const g = gymAttendance({ gymChecks, routines, player: p, today });
+    const g = gymAttendance({ gymChecks, routines, player: p, today, month });
     present += g.present;
     total += g.total;
   });

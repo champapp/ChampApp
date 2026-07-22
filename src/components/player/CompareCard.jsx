@@ -24,7 +24,7 @@ function CompareBar({ label, mine, avg, color }) {
 }
 
 // Comparativa de la asistencia del jugador vs el promedio de su categoría,
-// separando cancha (la marca el admin) y gimnasio (la semana actual).
+// separando cancha (la marca el admin) y gimnasio (el mes actual).
 export function CompareCard({ player, attendance, categoryAvg, gymAtt, categoryGymAvg }) {
   const showGym = categoryGymAvg && categoryGymAvg.total > 0;
   return (
@@ -40,7 +40,7 @@ export function CompareCard({ player, attendance, categoryAvg, gymAtt, categoryG
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <CompareBar label="Asistencia a cancha" mine={attendance.rate} avg={categoryAvg.rate} color={rateColor(attendance.rate)} />
-        {showGym && <CompareBar label="Asistencia al gimnasio (esta semana)" mine={gymAtt.rate} avg={categoryGymAvg.rate} color={rateColor(gymAtt.rate)} />}
+        {showGym && <CompareBar label="Asistencia al gimnasio (este mes)" mine={gymAtt.rate} avg={categoryGymAvg.rate} color={rateColor(gymAtt.rate)} />}
       </div>
     </Card>
   );
