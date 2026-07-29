@@ -654,10 +654,13 @@ export function gymBlocksDone(gymChecks, playerId, routineId) {
   return done;
 }
 
-// rutinas vigentes para un jugador (de su categoría, con días pendientes, sin archivar)
-export function routinesForPlayer({ routines, gymChecks, player }) {
+// rutinas vigentes para un jugador: de su categoría, sin archivar, de la
+// semana en curso (week_start === lunes de hoy) y con días pendientes
+export function routinesForPlayer({ routines, gymChecks, player, today = todayISO() }) {
+  const thisMonday = mondayOf(today);
   return routines.filter((r) => {
     if (r.archived) return false;
+    if (r.week_start !== thisMonday) return false;
     const cats = routineCats(r);
     if (!cats.includes('all') && !cats.includes(player.cat)) return false;
     const done = gymBlocksDone(gymChecks, player.id, r.id);
