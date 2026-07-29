@@ -220,6 +220,15 @@ create table if not exists public.routines (
   created_at  timestamptz not null default now()
 );
 
+-- Job de pg_cron 'archive-past-routines': cada lunes 00:30 hora Montevideo
+-- (03:30 UTC) archiva automaticamente toda rutina cuya semana ya paso.
+-- Registrado manualmente via SQL Editor (no versionado en migraciones):
+--   select cron.schedule('archive-past-routines', '30 3 * * 1', $$
+--     update public.routines set archived = true
+--     where archived = false and week_start is not null
+--       and week_start < (date_trunc('week', (now() at time zone 'America/Montevideo'))::date)
+--   $$);
+
 -- Check de rutina del jugador (= asistencia al gimnasio). Maximo 1 por dia.
 create table if not exists public.gym_checks (
   id          bigint generated always as identity primary key,

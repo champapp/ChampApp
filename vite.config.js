@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registramos el SW a mano en main.jsx para poder forzar un reload
+      // apenas el nuevo SW toma control (ver comentario ahí).
+      injectRegister: false,
       devOptions: { enabled: true },
       manifest: {
         name: 'ChampApp · Champagnat Rugby',
