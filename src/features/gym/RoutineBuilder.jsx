@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Field, TextInput } from '../../ui';
-import { CATS, ROUTINE_SECTIONS } from '../../lib/domain';
+import { CATS, ROUTINE_SECTIONS, mondayOf, todayISO } from '../../lib/domain';
 import { usePlayers, useUpsertRoutine } from '../../lib/queries';
 
 const blankEx = () => ({ section: '', name: '', aprox: '', detail: '', rest: '' });
@@ -31,6 +31,7 @@ export function RoutineBuilder({ initial, onClose, toast }) {
     return ['all'];
   });
   const [note, setNote] = useState(initial ? (initial.note || '') : '');
+  const [weekStart, setWeekStart] = useState(initial ? (initial.week_start || '') : mondayOf(todayISO()));
   const [blocks, setBlocks] = useState(() => (initial
     ? JSON.parse(JSON.stringify(initial.blocks || []))
     : [{ title: 'Día 1', exercises: [blankEx()] }]));
@@ -77,7 +78,7 @@ export function RoutineBuilder({ initial, onClose, toast }) {
     if (!cleanBlocks.length) { toast('Agregá al menos un ejercicio'); return; }
     const finalCats = allCat || !cats.length ? ['all'] : cats;
     upsert.mutate(
-      { id: initial ? initial.id : undefined, title: title.trim(), cats: finalCats, note: note.trim(), blocks: cleanBlocks },
+      { id: initial ? initial.id : undefined, title: title.trim(), cats: finalCats, note: note.trim(), blocks: cleanBlocks, week_start: weekStart ? mondayOf(weekStart) : null },
       {
         onSuccess: () => { onClose(); toast(initial ? 'Rutina actualizada' : 'Rutina publicada ✓'); },
         onError: () => toast('No se pudo guardar. Probá de nuevo.'),
@@ -108,6 +109,10 @@ export function RoutineBuilder({ initial, onClose, toast }) {
               ))}
             </div>
             <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: CC.muted, marginTop: 7 }}>{allCat ? 'La rutina le aparece a todo el plantel.' : 'Le aparece a: ' + cats.join(', ')}</div>
+          </Field>
+          <Field label="Semana del (lunes)">
+            <input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 10, padding: '9px 12px', fontFamily: 'Barlow, sans-serif', fontSize: 15, color: CC.ink, background: '#fff' }} />
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: CC.muted, marginTop: 5 }}>Se ajusta automáticamente al lunes de esa semana. Se usa para que esta rutina cuente en el mes correcto en las estadísticas de asistencia.</div>
           </Field>
           <Field label="Nota (opcional)"><TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ej: 3 series, descanso 90s" /></Field>
 

@@ -205,12 +205,18 @@ create table if not exists public.shop_sales (
 create index if not exists shop_sales_item_idx on public.shop_sales (item_id);
 
 -- Rutinas de gimnasio. blocks = [{title, exercises:[{section,name,aprox,detail,rest}]}]
+-- week_start: lunes de la semana a la que corresponde la rutina, usado para
+-- que las estadisticas de asistencia al gym cuenten cada rutina en su mes
+-- correcto (independiente de si esta archivada). archived: oculta la rutina
+-- de los listados de "vigentes" sin borrarla ni afectar el historico.
 create table if not exists public.routines (
   id          bigint generated always as identity primary key,
   title       text not null,
   cats        jsonb not null default '[]'::jsonb,
   note        text,
   blocks      jsonb not null default '[]'::jsonb,
+  week_start  date,
+  archived    boolean not null default false,
   created_at  timestamptz not null default now()
 );
 

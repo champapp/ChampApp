@@ -654,9 +654,10 @@ export function gymBlocksDone(gymChecks, playerId, routineId) {
   return done;
 }
 
-// rutinas vigentes para un jugador (de su categoría, con días pendientes)
+// rutinas vigentes para un jugador (de su categoría, con días pendientes, sin archivar)
 export function routinesForPlayer({ routines, gymChecks, player }) {
   return routines.filter((r) => {
+    if (r.archived) return false;
     const cats = routineCats(r);
     if (!cats.includes('all') && !cats.includes(player.cat)) return false;
     const done = gymBlocksDone(gymChecks, player.id, r.id);
@@ -669,12 +670,18 @@ export function routinesForPlayer({ routines, gymChecks, player }) {
 }
 
 // días de rutina por semana de un jugador: suma de los bloques (días) de las
-// rutinas vigentes para su categoría
-export function routineDaysPerWeek(routines, player) {
+// rutinas de su categoría. Si se pasa `month`, solo cuenta las rutinas cuya
+// semana (week_start) cae en ese mes — así una rutina archivada sigue
+// contando para el mes en que estuvo vigente, y una cargada con anticipación
+// para una semana futura no infla el mes en que se la creó. Las rutinas sin
+// week_start (legacy) cuentan siempre.
+export function routineDaysPerWeek(routines, player, month) {
   return routines
     .filter((r) => {
       const cats = routineCats(r);
-      return cats.includes('all') || cats.includes(player.cat);
+      if (!cats.includes('all') && !cats.includes(player.cat)) return false;
+      if (!month || !r.week_start) return true;
+      return inMonth(r.week_start, month);
     })
     .reduce((sum, r) => sum + (Array.isArray(r.blocks) ? r.blocks.length : 0), 0);
 }
@@ -692,7 +699,7 @@ function weeksElapsedInMonth(month, today) {
 // rutina marcados como hechos sobre el objetivo del mes (días de rutina por
 // semana × semanas transcurridas del mes)
 export function gymAttendance({ gymChecks, routines, player, today = todayISO(), month = today.slice(0, 7) }) {
-  const total = routineDaysPerWeek(routines, player) * weeksElapsedInMonth(month, today);
+  const total = routineDaysPerWeek(routines, player, month) * weeksElapsedInMonth(month, today);
   const present = gymAttDates({ gymChecks, playerId: player.id, month }).length;
   return { present, total, rate: total ? Math.min(present / total, 1) : 0 };
 }

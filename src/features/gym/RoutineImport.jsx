@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon } from '../../ui';
+import { mondayOf, todayISO } from '../../lib/domain';
 import { useUpsertRoutine } from '../../lib/queries';
 
 const ROUTINE_TEMPLATE = 'Rutina,Categoria,Bloque,Seccion,Ejercicio,Aproximaciones,SetRep,Descanso\n'
@@ -78,9 +79,10 @@ export function RoutineImport({ onClose, toast }) {
     const routines = csvToRoutines(text);
     if (!routines.length) { toast('No pude leer la planilla. Revisá el formato.'); return; }
     try {
+      const weekStart = mondayOf(todayISO());
       for (const r of routines) {
         const cats = r.cat === 'all' ? ['all'] : [r.cat];
-        await upsert.mutateAsync({ title: r.title, cats, note: r.note || '', blocks: r.blocks });
+        await upsert.mutateAsync({ title: r.title, cats, note: r.note || '', blocks: r.blocks, week_start: weekStart });
       }
       onClose();
       toast(routines.length + ' rutina' + (routines.length === 1 ? '' : 's') + ' importada' + (routines.length === 1 ? '' : 's') + ' ✓');
@@ -104,7 +106,7 @@ export function RoutineImport({ onClose, toast }) {
         <div style={{ overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ background: '#fff', border: `1px solid ${CC.line}`, borderRadius: 12, padding: 12 }}>
             <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15.5, color: CC.ink, letterSpacing: 0.2, marginBottom: 6 }}>Cómo armar la planilla</div>
-            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, lineHeight: 1.5 }}>Una fila por ejercicio, con estas columnas (igual que tu planilla de gimnasio):<br /><b style={{ color: CC.ink }}>Rutina · Categoria · Bloque (día) · Seccion · Ejercicio · Aproximaciones · SetRep · Descanso</b><br />Las filas con la misma <i>Rutina</i> y <i>Bloque</i> se agrupan solas. En Google Sheets: <b>Archivo → Descargar → CSV</b> y subí el archivo.</div>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, lineHeight: 1.5 }}>Una fila por ejercicio, con estas columnas (igual que tu planilla de gimnasio):<br /><b style={{ color: CC.ink }}>Rutina · Categoria · Bloque (día) · Seccion · Ejercicio · Aproximaciones · SetRep · Descanso</b><br />Las filas con la misma <i>Rutina</i> y <i>Bloque</i> se agrupan solas. En Google Sheets: <b>Archivo → Descargar → CSV</b> y subí el archivo.<br />Las rutinas importadas quedan asignadas a la semana actual — si son para otra semana, corregilo después editando la rutina.</div>
             <button onClick={downloadTemplate} style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${CC.navy}`, background: '#fff', color: CC.navy, borderRadius: 10, padding: '8px 13px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14 }}><Icon name="download" size={15} color={CC.navy} sw={2.3} />Descargar plantilla modelo</button>
           </div>
 
