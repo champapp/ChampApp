@@ -19,7 +19,17 @@ navigator.serviceWorker?.addEventListener('controllerchange', () => {
   window.location.reload()
 })
 
-const queryClient = new QueryClient()
+// staleTime/gcTime altos: al volver de background (celular), la app muestra
+// de entrada los datos que ya tenía en caché mientras actualiza atrás, en
+// vez de bloquear cada pantalla con "Cargando…" hasta pedir todo de nuevo.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 30 * 60_000,
+    },
+  },
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

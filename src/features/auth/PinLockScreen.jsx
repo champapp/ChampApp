@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CC, Avatar } from '../../ui';
+import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from './useAuth';
 import { submitBtn } from './authStyles';
 import { PinField, ErrorMsg } from './authUi';
@@ -59,6 +60,16 @@ export function PinLockScreen({ remembered, onUnlock, onForgetDevice }) {
     setBioPending(true);
     try {
       await verifyBiometric(remembered.username);
+      // Face ID/huella solo confirma identidad local — la sesión de Supabase
+      // pudo vencer mientras la app estaba en background. La revalidamos
+      // antes de dar por entrado; si venció, mostramos el PIN acá mismo en
+      // vez de mandar a la pantalla de login completo.
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        setShowPin(true);
+        setBioError('Tu sesión expiró. Ingresá tu PIN para volver a entrar.');
+        return;
+      }
       onUnlock();
     } catch (err) {
       if (err.name === 'NotAllowedError') {

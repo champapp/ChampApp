@@ -15,21 +15,18 @@ async function loadProfile(session) {
   );
 
   const fetch = async () => {
+    // Un solo viaje de red: trae el rol y (si es jugador) su fila de
+    // `players` embebida, en vez de dos consultas secuenciales.
     const { data: roleRow } = await supabase
       .from('user_roles')
-      .select('role, player_id')
+      .select('role, player_id, players(*)')
       .eq('user_id', session.user.id)
       .maybeSingle();
 
     if (!roleRow) return { role: null, player: null };
 
     if (roleRow.role === 'player' && roleRow.player_id) {
-      const { data: playerRow } = await supabase
-        .from('players')
-        .select('*')
-        .eq('id', roleRow.player_id)
-        .maybeSingle();
-      return { role: 'player', player: playerRow ?? null };
+      return { role: 'player', player: roleRow.players ?? null };
     }
 
     return { role: roleRow.role, player: null };
