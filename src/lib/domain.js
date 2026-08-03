@@ -513,6 +513,30 @@ export const M17_DIVS = [
 // labels de division para jugadores de Plantel Superior (players.division)
 export const PS_DIVISIONS = PS_DIVS.map((d) => d.label);
 
+// divisiones de PS con marcador propio. "Primera" usa las columnas base
+// score_us/score_them (compatibilidad con partidos ya cargados); el resto
+// usa columnas con sufijo.
+export const PS_SCORE_DIVS = [
+  { key: 'time_primera', usKey: 'score_us', themKey: 'score_them', label: 'Primera' },
+  { key: 'time_intermedia', usKey: 'score_us_intermedia', themKey: 'score_them_intermedia', label: 'Intermedia' },
+  { key: 'time_preintermedia', usKey: 'score_us_preintermedia', themKey: 'score_them_preintermedia', label: 'Pre-Intermedia' },
+];
+
+// divisiones de M17 con marcador propio. "M17" usa las columnas base.
+export const M17_SCORE_DIVS = [
+  { key: 'time_m17', usKey: 'score_us', themKey: 'score_them', label: 'M17' },
+  { key: 'time_m16', usKey: 'score_us_m16', themKey: 'score_them_m16', label: 'M16' },
+];
+
+// divisiones activas (con horario cargado) de un partido, con sus columnas
+// de marcador — null si la categoría no tiene divisiones con marcador propio
+export function scoreDivsForMatch(m) {
+  const divs = m.cat === 'PS' ? PS_SCORE_DIVS : m.cat === 'M17' ? M17_SCORE_DIVS : null;
+  if (!divs) return null;
+  const active = divs.filter((d) => m[d.key]);
+  return active.length ? active : null;
+}
+
 // horarios de kick off (y citación) cargados para un partido de PS, por división
 export function psMatchTimes(m) {
   return PS_DIVS.filter((d) => m[d.key]).map((d) => ({ label: d.label, time: m[d.key], cite: m[d.citeKey] || null }));
@@ -565,7 +589,10 @@ export function surveyMatch({ matches, cat, sub, today = todayISO() }) {
 }
 
 // estadística de RSVP de un partido sobre el plantel de su categoría
-export function matchRsvpStats({ players, rsvp, matchId, cat, sub }) {
+// `sortByStatus`: false mantiene el orden alfabético estable (no reordena
+// según la respuesta) — se usa mientras la convocatoria sigue abierta, para
+// que la lista no salte al tocar un jugador.
+export function matchRsvpStats({ players, rsvp, matchId, cat, sub, sortByStatus = true }) {
   const roster = players.filter((p) => p.cat === cat && (sub == null || p.sub === sub));
   const rank = { yes: 0, doubt: 1, no: 2 };
   let yes = 0;
@@ -580,7 +607,7 @@ export function matchRsvpStats({ players, rsvp, matchId, cat, sub }) {
     return { player: p, val };
   });
 
-  list.sort((a, b) => ((rank[a.val] ?? 3) - (rank[b.val] ?? 3)) || a.player.name.localeCompare(b.player.name));
+  list.sort((a, b) => (sortByStatus ? (rank[a.val] ?? 3) - (rank[b.val] ?? 3) : 0) || a.player.name.localeCompare(b.player.name));
 
   return { yes, no, doubt, pending: roster.length - yes - no - doubt, total: roster.length, list };
 }
@@ -644,18 +671,22 @@ export function routineCats(routine) {
   return ['all'];
 }
 
-// bloques (días) ya completados de una rutina por un jugador
-export function gymBlocksDone(gymChecks, playerId, routineId) {
-  const done = {};
+// fecha (la más reciente, YYYY-MM-DD) en que un jugador completó cada bloque
+// de una rutina. 'all' = se registró un check sin bloque específico (legacy).
+export function gymBlockDates(gymChecks, playerId, routineId) {
+  const dates = {};
   gymChecks.forEach((c) => {
     if (c.player_id !== playerId || c.routine_id !== routineId) return;
-    if (c.block == null) done.all = true; else done[c.block] = true;
+    const key = c.block == null ? 'all' : c.block;
+    if (!dates[key] || c.date > dates[key]) dates[key] = c.date;
   });
-  return done;
+  return dates;
 }
 
 // rutinas vigentes para un jugador: de su categoría, sin archivar, de la
-// semana en curso (week_start === lunes de hoy) y con días pendientes
+// semana en curso (week_start === lunes de hoy) y con días pendientes. Un
+// día completado sigue "vigente" el resto del día en que se marcó — recién
+// se lo considera terminado al día siguiente (ver RoutineView).
 export function routinesForPlayer({ routines, gymChecks, player, today = todayISO() }) {
   const thisMonday = mondayOf(today);
   return routines.filter((r) => {
@@ -663,11 +694,14 @@ export function routinesForPlayer({ routines, gymChecks, player, today = todayIS
     if (r.week_start !== thisMonday) return false;
     const cats = routineCats(r);
     if (!cats.includes('all') && !cats.includes(player.cat)) return false;
-    const done = gymBlocksDone(gymChecks, player.id, r.id);
-    if (done.all) return false;
+    const dates = gymBlockDates(gymChecks, player.id, r.id);
+    if (dates.all) return dates.all >= today;
     const blocks = Array.isArray(r.blocks) ? r.blocks : [];
     if (!blocks.length) return true;
-    for (let i = 0; i < blocks.length; i++) if (!done[i]) return true;
+    for (let i = 0; i < blocks.length; i++) {
+      const d = dates[i];
+      if (!d || d >= today) return true;
+    }
     return false;
   });
 }

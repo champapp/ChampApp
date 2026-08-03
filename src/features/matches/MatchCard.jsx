@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, CatBadge } from '../../ui';
-import { todayISO, matchRsvpStats, matchTimeLabel } from '../../lib/domain';
+import { todayISO, matchRsvpStats, matchTimeLabel, scoreDivsForMatch } from '../../lib/domain';
 import { usePlayers, useRsvp, useSetMatchScore } from '../../lib/queries';
 
 const MONTH_SHORT = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
@@ -22,21 +22,53 @@ function MatchRsvpBar({ match, onOpen }) {
   );
 }
 
-// Entrada/display de marcador para partidos jugados (solo admin, categorías SCORE_CATS)
+const SINGLE_SCORE_DIV = [{ usKey: 'score_us', themKey: 'score_them', label: null }];
+
+function divResult(match, d) {
+  const us = match[d.usKey];
+  const them = match[d.themKey];
+  if (us == null || them == null) return null;
+  return us > them ? 'won' : us === them ? 'tied' : 'lost';
+}
+
+function initScores(match, divs) {
+  return Object.fromEntries(divs.map((d) => [
+    d.usKey,
+    { us: match[d.usKey] != null ? String(match[d.usKey]) : '', them: match[d.themKey] != null ? String(match[d.themKey]) : '' },
+  ]));
+}
+
+// Entrada/display de marcador para partidos jugados (solo admin, categorías
+// SCORE_CATS). Si el partido tiene divisiones con horario propio (PS,
+// M17) muestra un marcador por cada una de las que tengan horario cargado;
+// si no, un único marcador general.
 function ScoreBar({ match, toast }) {
   const [open, setOpen] = useState(false);
-  const [us, setUs] = useState(match.score_us != null ? String(match.score_us) : '');
-  const [them, setThem] = useState(match.score_them != null ? String(match.score_them) : '');
+  const divs = scoreDivsForMatch(match) || SINGLE_SCORE_DIV;
+  const [scores, setScores] = useState(() => initScores(match, divs));
   const setScore = useSetMatchScore();
 
-  const hasScore = match.score_us != null && match.score_them != null;
-  const won = hasScore && match.score_us > match.score_them;
-  const tied = hasScore && match.score_us === match.score_them;
-  const scoreColor = won ? CC.good : tied ? CC.muted : CC.bad;
+  const results = divs.map((d) => ({ d, r: divResult(match, d) }));
+  const hasAnyScore = results.some(({ r }) => r != null);
+  const allFilled = divs.every((d) => scores[d.usKey].us !== '' && scores[d.usKey].them !== '');
+
+  function setField(usKey, field, value) {
+    setScores((s) => ({ ...s, [usKey]: { ...s[usKey], [field]: value } }));
+  }
+
+  function openEdit() {
+    setScores(initScores(match, divs));
+    setOpen(true);
+  }
 
   function save() {
-    if (us === '' || them === '') return;
-    setScore.mutate({ id: match.id, score_us: Number(us), score_them: Number(them) }, {
+    if (!allFilled) return;
+    const patch = { id: match.id };
+    divs.forEach((d) => {
+      patch[d.usKey] = Number(scores[d.usKey].us);
+      patch[d.themKey] = Number(scores[d.usKey].them);
+    });
+    setScore.mutate(patch, {
       onSuccess: () => { setOpen(false); toast?.('Resultado guardado'); },
       onError: () => toast?.('Error al guardar'),
     });
@@ -45,24 +77,29 @@ function ScoreBar({ match, toast }) {
   if (!open) {
     return (
       <button
-        onClick={(e) => { e.stopPropagation(); setUs(match.score_us != null ? String(match.score_us) : ''); setThem(match.score_them != null ? String(match.score_them) : ''); setOpen(true); }}
+        onClick={(e) => { e.stopPropagation(); openEdit(); }}
         style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', cursor: 'pointer', border: 'none', borderTop: `1px solid ${CC.line}`, background: 'transparent', padding: '9px 2px 2px', marginTop: 9, textAlign: 'left' }}
       >
-        <Icon name="trophy" size={14} color={hasScore ? scoreColor : CC.faint} sw={2.2} />
-        {hasScore ? (
-          <>
-            <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color: scoreColor, letterSpacing: 0.4 }}>
-              {match.score_us} – {match.score_them}
-            </span>
-            <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: scoreColor, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-              {won ? 'Ganamos' : tied ? 'Empate' : 'Perdimos'}
-            </span>
-          </>
+        <Icon name="trophy" size={14} color={hasAnyScore ? CC.navy : CC.faint} sw={2.2} />
+        {hasAnyScore ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {results.filter(({ r }) => r != null).map(({ d, r }) => {
+              const color = r === 'won' ? CC.good : r === 'tied' ? CC.muted : CC.bad;
+              return (
+                <span key={d.usKey} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
+                  {d.label && <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, color: CC.faint }}>{d.label}</span>}
+                  <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color, letterSpacing: 0.4 }}>
+                    {match[d.usKey]} – {match[d.themKey]}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
         ) : (
           <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, color: CC.faint, letterSpacing: 0.3 }}>Cargar resultado</span>
         )}
-        <span style={{ marginLeft: 'auto', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 12, color: CC.faint, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-          <Icon name="edit" size={13} color={CC.faint} sw={2.2} />{hasScore ? 'Editar' : ''}
+        <span style={{ marginLeft: 'auto', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 12, color: CC.faint, display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          <Icon name="edit" size={13} color={CC.faint} sw={2.2} />{hasAnyScore ? 'Editar' : ''}
         </span>
       </button>
     );
@@ -70,25 +107,34 @@ function ScoreBar({ match, toast }) {
 
   return (
     <div onClick={(e) => e.stopPropagation()} style={{ borderTop: `1px solid ${CC.line}`, marginTop: 9, paddingTop: 10 }}>
-      <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, fontWeight: 700, color: CC.muted, letterSpacing: 0.4, marginBottom: 8, textTransform: 'uppercase' }}>Resultado</div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, letterSpacing: 0.3, marginBottom: 4 }}>CHAMP</div>
-          <input
-            type="number" min="0" inputMode="numeric" value={us} onChange={(e) => setUs(e.target.value)}
-            style={{ width: '100%', border: `1.5px solid ${CC.line}`, borderRadius: 9, padding: '8px 10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 24, color: CC.ink, textAlign: 'center', background: '#fff', boxSizing: 'border-box' }}
-          />
+      <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, fontWeight: 700, color: CC.muted, letterSpacing: 0.4, marginBottom: 8, textTransform: 'uppercase' }}>Resultado{divs.length > 1 ? ' por división' : ''}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {divs.map((d) => (
+          <div key={d.usKey}>
+            {d.label && <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: CC.navy, marginBottom: 5 }}>{d.label}</div>}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, letterSpacing: 0.3, marginBottom: 4 }}>CHAMP</div>
+                <input
+                  type="number" min="0" inputMode="numeric" value={scores[d.usKey].us} onChange={(e) => setField(d.usKey, 'us', e.target.value)}
+                  style={{ width: '100%', border: `1.5px solid ${CC.line}`, borderRadius: 9, padding: '8px 10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 24, color: CC.ink, textAlign: 'center', background: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 24, color: CC.faint, fontWeight: 700, paddingBottom: 8 }}>–</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, letterSpacing: 0.3, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.rival.toUpperCase().slice(0, 14)}</div>
+                <input
+                  type="number" min="0" inputMode="numeric" value={scores[d.usKey].them} onChange={(e) => setField(d.usKey, 'them', e.target.value)}
+                  style={{ width: '100%', border: `1.5px solid ${CC.line}`, borderRadius: 9, padding: '8px 10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 24, color: CC.ink, textAlign: 'center', background: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={save} disabled={setScore.isPending || !allFilled} style={{ flex: 1, height: 44, border: 'none', background: CC.gold, color: CC.navy900, borderRadius: 10, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, letterSpacing: 0.3, opacity: (setScore.isPending || !allFilled) ? 0.5 : 1 }}>Guardar</button>
+          <button onClick={() => setOpen(false)} style={{ height: 44, border: 'none', background: 'rgba(14,58,92,0.07)', color: CC.muted, borderRadius: 10, padding: '0 16px', cursor: 'pointer', fontSize: 16 }}>✕</button>
         </div>
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 24, color: CC.faint, fontWeight: 700, paddingBottom: 8 }}>–</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, letterSpacing: 0.3, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.rival.toUpperCase().slice(0, 14)}</div>
-          <input
-            type="number" min="0" inputMode="numeric" value={them} onChange={(e) => setThem(e.target.value)}
-            style={{ width: '100%', border: `1.5px solid ${CC.line}`, borderRadius: 9, padding: '8px 10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 24, color: CC.ink, textAlign: 'center', background: '#fff', boxSizing: 'border-box' }}
-          />
-        </div>
-        <button onClick={save} disabled={setScore.isPending || us === '' || them === ''} style={{ height: 44, border: 'none', background: CC.gold, color: CC.navy900, borderRadius: 10, padding: '0 14px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, opacity: (setScore.isPending || us === '' || them === '') ? 0.5 : 1 }}>✓</button>
-        <button onClick={() => setOpen(false)} style={{ height: 44, border: 'none', background: 'rgba(14,58,92,0.07)', color: CC.muted, borderRadius: 10, padding: '0 12px', cursor: 'pointer', fontSize: 16 }}>✕</button>
       </div>
     </div>
   );

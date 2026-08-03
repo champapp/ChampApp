@@ -765,11 +765,14 @@ export function useUpsertAdminDoc() {
 
 // ── Marcadores de partido ─────────────────────────────────────
 
+// Guarda el marcador de un partido (o de una división puntual, ej.
+// score_us_intermedia/score_them_intermedia) — acepta cualquier columna de
+// marcador vía spread, para soportar partidos con varias divisiones.
 export function useSetMatchScore() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, score_us, score_them }) => {
-      const { error } = await supabase.from('matches').update({ score_us, score_them }).eq('id', id);
+    mutationFn: async ({ id, ...patch }) => {
+      const { error } = await supabase.from('matches').update(patch).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['matches'] }),

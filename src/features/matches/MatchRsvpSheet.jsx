@@ -1,10 +1,13 @@
 import { CC, Icon, Avatar, matchLongDate } from '../../ui';
-import { matchRsvpStats } from '../../lib/domain';
+import { matchRsvpStats, isSurveyActive } from '../../lib/domain';
 import { usePlayers, useRsvp, useSetRsvp } from '../../lib/queries';
 import { RsvpChip } from './RsvpChip';
 
 // Cuadro de convocatoria de toda la categoría (admin): tocar un jugador
-// cicla su respuesta yes → no → sin responder → yes.
+// cicla su respuesta yes → no → sin responder → yes. Mientras la
+// convocatoria sigue abierta, la lista no se reordena al cambiar una
+// respuesta (para no "saltar" mientras el admin la va completando) —
+// recién se ordena por asiste/no asiste/sin responder cuando cierra.
 export function MatchRsvpSheet({ match, onClose }) {
   const playersQ = usePlayers();
   const rsvpQ = useRsvp();
@@ -12,7 +15,10 @@ export function MatchRsvpSheet({ match, onClose }) {
 
   if (playersQ.isLoading || rsvpQ.isLoading) return null;
 
-  const stats = matchRsvpStats({ players: playersQ.data, rsvp: rsvpQ.data, matchId: match.id, cat: match.cat, sub: null });
+  const stats = matchRsvpStats({
+    players: playersQ.data, rsvp: rsvpQ.data, matchId: match.id, cat: match.cat, sub: null,
+    sortByStatus: !isSurveyActive(match),
+  });
   const pct = (n) => (stats.total ? Math.round((n / stats.total) * 100) : 0);
 
   function cycle(pid) {

@@ -135,6 +135,19 @@ create table if not exists public.matches (
   cite_primera       text,                       -- PS: horario de citacion de Primera
   cite_intermedia    text,                       -- PS: horario de citacion de Intermedia
   cite_preintermedia text,                       -- PS: horario de citacion de Pre-Intermedia
+  time_m17    text,                              -- M17: horario de M17, si juega
+  cite_m17    text,                              -- M17: horario de citacion de M17
+  time_m16    text,                              -- M17: horario de M16, si juega
+  cite_m16    text,                              -- M17: horario de citacion de M16
+  maps_url    text,                              -- link de Google Maps para partidos de visitante
+  score_us         int,                          -- resultado general (o de Primera/M17 si el partido tiene divisiones)
+  score_them       int,
+  score_us_intermedia    int,                    -- PS: resultado de Intermedia
+  score_them_intermedia  int,
+  score_us_preintermedia int,                    -- PS: resultado de Pre-Intermedia
+  score_them_preintermedia int,
+  score_us_m16     int,                          -- M17: resultado de M16
+  score_them_m16   int,
   created_at  timestamptz not null default now()
 );
 create index if not exists matches_cat_date_idx on public.matches (cat, date);

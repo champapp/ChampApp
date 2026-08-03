@@ -106,6 +106,7 @@ export function AttendanceScreen() {
   const [draft, setDraft] = useState(null);
   const [showDateInput, setShowDateInput] = useState(false);
   const [newDate, setNewDate] = useState(todayISO());
+  const [zoomPlayer, setZoomPlayer] = useState(null);
 
   const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, gymChecksQ, routinesQ, injuriesQ];
   if (queries.some((q) => q.isLoading)) return <AttendanceLoading />;
@@ -380,7 +381,13 @@ export function AttendanceScreen() {
               boxShadow: '0 1px 2px rgba(14,34,53,0.04)',
               border: editing ? `1.5px solid ${pres ? 'rgba(30,158,106,0.3)' : 'rgba(224,82,78,0.3)'}` : '1.5px solid transparent',
             }}>
-              <Avatar name={p.name} photo={p.photo_url} size={40} ring={player && p.id === player.id ? CC.gold : null} />
+              <button
+                type="button"
+                onClick={() => p.photo_url && setZoomPlayer(p)}
+                style={{ border: 'none', background: 'transparent', padding: 0, cursor: p.photo_url ? 'pointer' : 'default', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
+              >
+                <Avatar name={p.name} photo={p.photo_url} size={40} ring={player && p.id === player.id ? CC.gold : null} />
+              </button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 15, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}{player && p.id === player.id ? ' (vos)' : ''}</span>
@@ -408,6 +415,16 @@ export function AttendanceScreen() {
           );
         })}
       </div>
+
+      {zoomPlayer && (
+        <div onClick={() => setZoomPlayer(null)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <img src={zoomPlayer.photo_url} alt={zoomPlayer.name} style={{ maxWidth: '90vw', maxHeight: '82vh', borderRadius: 18, objectFit: 'contain', boxShadow: '0 12px 60px rgba(0,0,0,0.6)' }} onClick={(e) => e.stopPropagation()} />
+          <button onClick={() => setZoomPlayer(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: 42, height: 42, borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+            <Icon name="x" size={20} color="#fff" sw={2.4} />
+          </button>
+          <div style={{ position: 'absolute', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: 'rgba(255,255,255,0.8)', letterSpacing: 0.5 }}>{zoomPlayer.name}</div>
+        </div>
+      )}
 
       <Toast msg={toast} />
     </div>

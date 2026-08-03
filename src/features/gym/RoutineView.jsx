@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Card } from '../../ui';
-import { gymBlocksDone, routineCats, todayISO } from '../../lib/domain';
+import { gymBlockDates, routineCats, todayISO } from '../../lib/domain';
 import { useAddGymCheck } from '../../lib/queries';
 
 // colores por sección de la planilla
@@ -44,18 +44,23 @@ export function RoutineView({ routine, player, gymChecks, toast }) {
   const [confirming, setConfirming] = useState(null); // índice del bloque a confirmar
   const addCheck = useAddGymCheck();
 
-  const blocksDone = gymBlocksDone(gymChecks, player.id, routine.id);
+  const blockDates = gymBlockDates(gymChecks, player.id, routine.id);
+  const today = todayISO();
   const allBlocks = routine.blocks || [];
-  // Los días ya completados desaparecen de la lista — solo se muestran los pendientes.
+  // Un día completado sigue mostrándose (como "Completado") el resto del día
+  // en que se marcó — recién desaparece al día siguiente.
   const blocks = allBlocks
     .map((b, i) => ({ ...b, _index: i }))
-    .filter((b) => !(blocksDone[b._index] || blocksDone.all));
+    .filter((b) => {
+      const d = blockDates[b._index] ?? blockDates.all;
+      return !d || d >= today;
+    });
   const nBlocks = blocks.length;
   const nEx = blocks.reduce((a, b) => a + (b.exercises || []).length, 0);
   const cats = routineCats(routine);
 
   function complete(bi) {
-    addCheck.mutate({ playerId: player.id, routineId: routine.id, block: bi, date: todayISO() }, {
+    addCheck.mutate({ playerId: player.id, routineId: routine.id, block: bi, date: today }, {
       onSuccess: () => { setConfirming(null); toast('Asistencia al gym registrada ✓'); },
       onError: () => toast('No se pudo guardar. Probá de nuevo.'),
     });
@@ -78,12 +83,14 @@ export function RoutineView({ routine, player, gymChecks, toast }) {
           {routine.note && <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.muted, lineHeight: 1.4, marginBottom: 12, background: CC.paper, borderRadius: 10, padding: '9px 11px' }}>{routine.note}</div>}
           {blocks.map((b) => {
             const i = b._index;
+            const done = !!(blockDates[i] ?? blockDates.all);
             return (
               <div key={i} style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
-                  <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: '#fff', background: CC.navy, borderRadius: 6, padding: '3px 9px', letterSpacing: 0.3, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                    {b.title || 'Bloque ' + (i + 1)}
+                  <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, color: '#fff', background: done ? CC.good : CC.navy, borderRadius: 6, padding: '3px 9px', letterSpacing: 0.3, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    {done && <Icon name="check" size={11} color="#fff" sw={3} />}{b.title || 'Bloque ' + (i + 1)}
                   </span>
+                  {done && <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: CC.good, fontWeight: 700 }}>Completado</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {groupBySection(b.exercises).map((g, gi) => {
@@ -113,18 +120,20 @@ export function RoutineView({ routine, player, gymChecks, toast }) {
                   })}
                 </div>
                 {/* check de asistencia por día */}
-                {confirming === i ? (
-                  <div style={{ background: 'rgba(30,158,106,0.07)', border: `1.5px solid ${CC.good}`, borderRadius: 13, padding: '11px 12px', marginTop: 8 }}>
-                    <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.ink, lineHeight: 1.4 }}>¿Confirmás que completaste <b>{b.title || 'este día'}</b> hoy? Se marca tu <b>asistencia al gym</b> en el calendario.</div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 9 }}>
-                      <button onClick={() => setConfirming(null)} style={{ flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.muted, padding: '9px', borderRadius: 11, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}>No, volver</button>
-                      <button onClick={() => complete(i)} disabled={addCheck.isPending} style={{ flex: 1.4, border: 'none', background: CC.good, color: '#fff', padding: '9px', borderRadius: 11, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: addCheck.isPending ? 0.7 : 1 }}><Icon name="check" size={15} color="#fff" sw={2.6} />Sí, lo completé</button>
+                {!done && (
+                  confirming === i ? (
+                    <div style={{ background: 'rgba(30,158,106,0.07)', border: `1.5px solid ${CC.good}`, borderRadius: 13, padding: '11px 12px', marginTop: 8 }}>
+                      <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.ink, lineHeight: 1.4 }}>¿Confirmás que completaste <b>{b.title || 'este día'}</b> hoy? Se marca tu <b>asistencia al gym</b> en el calendario.</div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 9 }}>
+                        <button onClick={() => setConfirming(null)} style={{ flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.muted, padding: '9px', borderRadius: 11, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5 }}>No, volver</button>
+                        <button onClick={() => complete(i)} disabled={addCheck.isPending} style={{ flex: 1.4, border: 'none', background: CC.good, color: '#fff', padding: '9px', borderRadius: 11, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: addCheck.isPending ? 0.7 : 1 }}><Icon name="check" size={15} color="#fff" sw={2.6} />Sí, lo completé</button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <button onClick={() => setConfirming(i)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: `1.5px solid ${CC.good}`, background: 'rgba(30,158,106,0.06)', color: CC.good, padding: '10px', borderRadius: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 0.3, marginTop: 8 }}>
-                    <Icon name="check" size={16} color={CC.good} sw={2.6} />Completé {b.title || 'este día'} hoy
-                  </button>
+                  ) : (
+                    <button onClick={() => setConfirming(i)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: `1.5px solid ${CC.good}`, background: 'rgba(30,158,106,0.06)', color: CC.good, padding: '10px', borderRadius: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 0.3, marginTop: 8 }}>
+                      <Icon name="check" size={16} color={CC.good} sw={2.6} />Completé {b.title || 'este día'} hoy
+                    </button>
+                  )
                 )}
               </div>
             );
