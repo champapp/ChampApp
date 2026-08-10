@@ -6,7 +6,7 @@ import { InjuryDot } from '../../../components/player/InjuryDot';
 const GROUPS = [
   { t: 'Forwards', range: [1, 8] },
   { t: 'Backs', range: [9, 15] },
-  { t: 'Suplentes', range: [16, 23] },
+  { t: 'Suplentes', range: [16, 28] },
 ];
 
 function posLabel(d) {

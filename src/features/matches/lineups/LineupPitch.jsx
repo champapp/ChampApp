@@ -50,7 +50,7 @@ export function LineupPitch({ lineup, embedded }) {
   const starters = [];
   for (let d = 1; d <= 15; d++) starters.push({ d, p: lineup.positions[d] ? playerById(playersQ.data, lineup.positions[d]) : null });
   const subs = [];
-  for (let d = 16; d <= 23; d++) { const pid = lineup.positions[d]; if (pid) subs.push({ d, p: playerById(playersQ.data, pid) }); }
+  for (let d = 16; d <= 28; d++) { const pid = lineup.positions[d]; if (pid) subs.push({ d, p: playerById(playersQ.data, pid) }); }
 
   return (
     <div style={{ borderRadius: embedded ? 0 : 18, overflow: 'hidden', marginBottom: embedded ? 0 : 14, boxShadow: embedded ? 'none' : '0 10px 28px rgba(7,36,61,0.2)', border: embedded ? 'none' : `1px solid ${CC.line}`, background: '#fff' }}>

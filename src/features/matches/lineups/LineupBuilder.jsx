@@ -4,8 +4,13 @@ import { CATS, POSITIONS, playerById, nextMatch, matchesForCat, matchTimeLabel, 
 import { usePlayers, useMatches, useUpsertLineup } from '../../../lib/queries';
 import { LineupPlayerPicker } from './LineupPlayerPicker';
 
-const LINEUP_MAX = 23;
-const SUBS = Array.from({ length: 8 }, (_, i) => ({ dorsal: 16 + i, pos: 'Suplente ' + (i + 1), short: 'Suplente', type: i < 5 ? 'Forward' : 'Back' }));
+const SUBS_DEFAULT = 8;
+const SUBS_MAX = 13; // 15 titulares + 13 suplentes = 28
+const LINEUP_MAX = 15 + SUBS_MAX;
+
+function buildSubs(count) {
+  return Array.from({ length: count }, (_, i) => ({ dorsal: 16 + i, pos: 'Suplente ' + (i + 1), short: 'Suplente', type: i < 5 ? 'Forward' : 'Back' }));
+}
 
 // fila de un puesto en el editor de alineación
 function LineupSlotRow({ players, dorsal, label, type, playerId, onTap }) {
@@ -44,6 +49,14 @@ export function LineupBuilder({ initial, onClose, toast }) {
   const [matchId, setMatchId] = useState(initial ? initial.match_id : null);
   const [picks, setPicks] = useState(initial ? { ...initial.positions } : {});
   const [picking, setPicking] = useState(null); // {dorsal, label}
+  // Cantidad de suplentes visibles (8 a 13). Si se edita una alineación que
+  // ya tenía más de 8 cargados, arranca mostrando todos los que tenía.
+  const [subCount, setSubCount] = useState(() => {
+    if (!initial) return SUBS_DEFAULT;
+    const highestSub = Math.max(15, ...Object.keys(initial.positions).map(Number).filter((d) => initial.positions[d]));
+    return Math.min(SUBS_MAX, Math.max(SUBS_DEFAULT, highestSub - 15));
+  });
+  const SUBS = buildSubs(subCount);
 
   if (playersQ.isLoading || matchesQ.isLoading) return null;
 
@@ -141,10 +154,15 @@ export function LineupBuilder({ initial, onClose, toast }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {POSITIONS.map((s) => <LineupSlotRow key={s.dorsal} players={players} dorsal={s.dorsal} label={s.pos} type={s.type} playerId={picks[s.dorsal]} onTap={() => setPicking({ dorsal: s.dorsal, label: '#' + s.dorsal + ' · ' + s.pos })} />)}
               </div>
-              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase', marginTop: 6 }}>Suplentes (16–23)</div>
+              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase', marginTop: 6 }}>Suplentes (16–{15 + subCount})</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {SUBS.map((s) => <LineupSlotRow key={s.dorsal} players={players} dorsal={s.dorsal} label={s.pos} type={s.type} playerId={picks[s.dorsal]} onTap={() => setPicking({ dorsal: s.dorsal, label: '#' + s.dorsal + ' · ' + s.pos })} />)}
               </div>
+              {subCount < SUBS_MAX && (
+                <button onClick={() => setSubCount((n) => Math.min(SUBS_MAX, n + 1))} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'flex-start', border: `1.5px dashed ${CC.navy}`, background: 'rgba(14,58,92,0.03)', color: CC.navy, padding: '9px 14px', borderRadius: 11, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14 }}>
+                  <Icon name="plus" size={14} color={CC.navy} sw={2.6} />Agregar suplente
+                </button>
+              )}
             </>
           )}
         </div>
