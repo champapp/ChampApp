@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   CC, Icon, Card, SectionTitle, Segmented, Empty, Ring, Avatar, BarRow, LineChart, fmtPct, monthName, rateColor,
 } from '../../ui';
-import { CATS, monthsList, overall, categoryAttendance, monthlyTrend, leastAttenders } from '../../lib/domain';
+import { CATS, monthsList, overall, categoryAttendance, monthlyTrend, leastAttenders, scoreDivsForMatch, PS_SCORE_DIVS, M17_SCORE_DIVS } from '../../lib/domain';
 import { InjuryDot } from '../../components/player/InjuryDot';
 import { FeedBoard } from '../../components/feed/FeedBoard';
 
@@ -88,16 +88,35 @@ export function AdminDashboard({ players, practices, attendance, matches, rsvp, 
   // Jugadores activos por categoría
   const playersByCat = CATS.map((c) => ({ id: c.id, count: players.filter((p) => p.cat === c.id).length }));
 
-  // Victorias por categoría (solo partidos con resultado cargado)
+  // Victorias por categoría (solo partidos con resultado cargado). Las
+  // categorías con divisiones propias (PS, M17) se desglosan por división
+  // — "PS · Primera", "PS · Intermedia", etc. — en vez de mezclar sus
+  // resultados en una sola fila.
   const winsByCat = {};
+  function addWinRecord(key, us, them) {
+    if (!winsByCat[key]) winsByCat[key] = { wins: 0, played: 0 };
+    winsByCat[key].played++;
+    if (us > them) winsByCat[key].wins++;
+  }
   (matches || []).forEach((m) => {
-    if (m.score_us != null && m.score_them != null) {
-      if (!winsByCat[m.cat]) winsByCat[m.cat] = { wins: 0, played: 0 };
-      winsByCat[m.cat].played++;
-      if (m.score_us > m.score_them) winsByCat[m.cat].wins++;
+    const divs = scoreDivsForMatch(m);
+    if (divs) {
+      divs.forEach((d) => {
+        if (m[d.usKey] != null && m[d.themKey] != null) addWinRecord(`${m.cat} · ${d.label}`, m[d.usKey], m[d.themKey]);
+      });
+    } else if (m.score_us != null && m.score_them != null) {
+      addWinRecord(m.cat, m.score_us, m.score_them);
     }
   });
-  const catsWithMatches = Object.keys(winsByCat);
+  // orden estable: por categoría (CATS) y, dentro de una categoría con
+  // divisiones, en el orden Primera/Intermedia/Pre-Intermedia o M17/M16
+  const catOrder = new Map(CATS.map((c, i) => [c.id, i]));
+  const divOrder = new Map([...PS_SCORE_DIVS, ...M17_SCORE_DIVS].map((d, i) => [d.label, i]));
+  const catsWithMatches = Object.keys(winsByCat).sort((a, b) => {
+    const [catA, divA] = a.split(' · ');
+    const [catB, divB] = b.split(' · ');
+    return (catOrder.get(catA) ?? 99) - (catOrder.get(catB) ?? 99) || (divOrder.get(divA) ?? 0) - (divOrder.get(divB) ?? 0);
+  });
 
   const widgets = [
     { id: 'resumen', label: 'Resumen del club', icon: 'stats', node: <ResumenCard ov={ov} month={month} byCatCount={byCat.length} /> },
