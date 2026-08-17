@@ -74,7 +74,7 @@ export function PlayersListScreen({ onOpenPlayer }) {
   function deletePlayer(p) {
     deleteMutation.mutate({ id: p.id, authUserId: p.auth_user_id ?? null }, {
       onSuccess: () => { setConfirmDelId(null); showToast('Jugador eliminado'); },
-      onError: () => showToast('No se pudo eliminar'),
+      onError: (err) => showToast('No se pudo eliminar: ' + (err?.message || 'error desconocido')),
     });
   }
 
