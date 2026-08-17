@@ -146,14 +146,17 @@ export function ExportScreen() {
       console.log('[PDF]', cat, 'uniqueDates:', uniqueDates);
 
       const rows = catPlayers.map((player) => {
-        const att = playerAttendance({ practices, attendance, matches, rsvp, player });
         const checks = uniqueDates.map((dateKey) => {
           const statuses = (dateMap.get(dateKey) || []).map((pid) => presenceMap.get(`${player.id}_${pid}`) || '');
           if (statuses.includes('P')) return 'P';
           if (statuses.includes('A')) return 'A';
           return '';
         });
-        return { name: player.name, rate: Math.round((att.rate || 0) * 100), checks };
+        // % en base a las prácticas del período exportado, no al acumulado histórico
+        const present = checks.filter((c) => c === 'P').length;
+        const marked = checks.filter((c) => c === 'P' || c === 'A').length;
+        const rate = marked ? Math.round((present / marked) * 100) : 0;
+        return { name: player.name, rate, checks };
       });
       return { cat, uniqueDates, rows };
     }).filter(Boolean);
