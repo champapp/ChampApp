@@ -209,6 +209,12 @@ export function useBookFisio() {
         .from('fisio_bookings')
         .insert({ player_id: playerId, date, time: wait ? null : time, reason, wait: !!wait });
       if (error) throw error;
+      // Si reservó un turno real (no lista de espera) y ya estaba anotado en
+      // la lista de espera de esa fecha, lo sacamos: ya no está esperando.
+      if (!wait) {
+        await supabase.from('fisio_bookings').delete()
+          .eq('player_id', playerId).eq('date', date).eq('wait', true);
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fisio_bookings'] }),
   });

@@ -85,6 +85,17 @@ export async function sendPush({ audience, title, body, url }) {
   }
 }
 
+// Avisa a la Edge Function `notify-fisio-waitlist` que se liberó un turno
+// con hora (date/time) — si hay alguien en la lista de espera de esa fecha,
+// le manda un push. Best-effort, igual que sendPush.
+export async function notifyFisioWaitlist({ date, time }) {
+  try {
+    await supabase.functions.invoke('notify-fisio-waitlist', { body: { date, time } });
+  } catch {
+    // el envío de push es best-effort
+  }
+}
+
 // Al iniciar sesion, si el navegador soporta push y el permiso todavia no fue
 // decidido o ya fue otorgado, asegura que haya una suscripcion guardada.
 // No insiste si el usuario ya rechazo el permiso.

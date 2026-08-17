@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CC, Icon, Avatar } from '../../ui';
 import { fisioUpcomingDates, fisioSlotTimes, fisioBookingAt, fisioWaitlist, fisioDateLabel } from '../../lib/domain';
 import { useFisioBookings, usePlayers, useCancelFisio } from '../../lib/queries';
+import { notifyFisioWaitlist } from '../../lib/push';
 import { InjuryDot } from '../../components/player/InjuryDot';
 import { FisioBookModal } from './FisioBookModal';
 
@@ -31,15 +32,21 @@ export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, t
   const freeCount = slots.filter((t) => !fisioBookingAt(bookings, date, t)).length;
   const isAdmin = mode === 'admin';
 
+  // Si el turno cancelado tenía hora asignada (no era de lista de espera),
+  // avisamos al primero en la lista de espera de esa fecha, si hay alguien.
+  function notifyIfSlotFreed(id) {
+    const cancelled = bookings.find((b) => b.id === id);
+    if (cancelled && cancelled.time) notifyFisioWaitlist({ date: cancelled.date, time: cancelled.time });
+  }
   function release(id) {
     cancelMutation.mutate(id, {
-      onSuccess: () => { setExpanded(null); setReleasingId(null); toast && toast('Turno liberado'); },
+      onSuccess: () => { setExpanded(null); setReleasingId(null); toast && toast('Turno liberado'); notifyIfSlotFreed(id); },
       onError: () => toast && toast('No se pudo liberar el turno'),
     });
   }
   function cancelOwn(id) {
     cancelMutation.mutate(id, {
-      onSuccess: () => { setExpanded(null); toast && toast('Turno cancelado'); },
+      onSuccess: () => { setExpanded(null); toast && toast('Turno cancelado'); notifyIfSlotFreed(id); },
       onError: () => toast && toast('No se pudo cancelar'),
     });
   }
