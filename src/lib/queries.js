@@ -276,7 +276,18 @@ export function useDeletePlayer() {
       const { data, error: fnErr } = await supabase.functions.invoke('delete-player-auth', {
         body: { playerId: id, authUserId: authUserId ?? null },
       });
-      if (fnErr) throw fnErr;
+      if (fnErr) {
+        // fnErr.message es genérico ("Edge Function returned a non-2xx
+        // status code") — el motivo real viene en el cuerpo de la respuesta.
+        let detail = fnErr.message;
+        try {
+          const body = await fnErr.context.json();
+          if (body?.error) detail = body.error;
+        } catch {
+          // sin cuerpo JSON legible: nos quedamos con el mensaje genérico
+        }
+        throw new Error(detail);
+      }
       if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
