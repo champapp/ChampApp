@@ -11,7 +11,7 @@ import { InjuryStats } from './InjuryStats';
 
 // Fila de un jugador lesionado: diagnóstico, retorno y protocolos (lectura),
 // con acceso al tratamiento completo.
-function SanidadRow({ player, injury, protocols, onTreat }) {
+function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
   const st = injuryStatus(injury);
   const [exp, setExp] = useState(false);
   if (!st) return null;
@@ -60,9 +60,16 @@ function SanidadRow({ player, injury, protocols, onTreat }) {
           ) : (
             <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, background: CC.paper, border: `1px dashed ${CC.line}`, borderRadius: 11, padding: '11px 12px', textAlign: 'center' }}>Todavía no cargaste protocolos para esta lesión.</div>
           )}
-          <button onClick={() => onTreat(player, injury)} style={{ marginTop: 11, display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: CC.navy, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, letterSpacing: 0.3, padding: 0 }}>
-            <Icon name="medkit" size={15} color={CC.navy} sw={2.4} />Tratamiento<Icon name="chevron" size={15} color={CC.navy} sw={2.5} />
-          </button>
+          <div style={{ display: 'flex', gap: 16, marginTop: 11, flexWrap: 'wrap' }}>
+            <button onClick={() => onTreat(player, injury)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: CC.navy, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, letterSpacing: 0.3, padding: 0 }}>
+              <Icon name="medkit" size={15} color={CC.navy} sw={2.4} />Tratamiento<Icon name="chevron" size={15} color={CC.navy} sw={2.5} />
+            </button>
+            {onOpenPlayer && (
+              <button onClick={() => onOpenPlayer(player.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'transparent', color: CC.muted, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, letterSpacing: 0.3, padding: 0 }}>
+                <Icon name="medkit" size={15} color={CC.muted} sw={2.4} />Ver historial<Icon name="chevron" size={15} color={CC.muted} sw={2.5} />
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -139,7 +146,7 @@ export function AdminHealthScreen({ onOpenPlayer }) {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {g.list.map((p) => (
-                          <SanidadRow key={p.id} player={p} injury={injuryByPlayer.get(p.id)} protocols={protocolsForInjury(allProtocols, injuryByPlayer.get(p.id)?.id)} onTreat={openTreatment} />
+                          <SanidadRow key={p.id} player={p} injury={injuryByPlayer.get(p.id)} protocols={protocolsForInjury(allProtocols, injuryByPlayer.get(p.id)?.id)} onTreat={openTreatment} onOpenPlayer={onOpenPlayer} />
                         ))}
                       </div>
                     </div>
