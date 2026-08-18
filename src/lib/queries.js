@@ -766,6 +766,20 @@ export function useAdminDocs(playerId) {
   });
 }
 
+// Documentación administrativa de TODOS los jugadores, para el resumen de
+// vencimientos en Inicio (admin). A diferencia de useAdminDocs, no filtra
+// por jugador.
+export function useAllAdminDocs() {
+  return useQuery({
+    queryKey: ['admin_docs_all'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('admin_docs').select('*');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 // Crea o actualiza la fecha de vencimiento de un documento. El jugador puede
 // editar los propios (RLS) y el admin los de cualquiera.
 export function useUpsertAdminDoc() {

@@ -492,6 +492,24 @@ export function adminDocAlerts(docs, today = todayISO()) {
     .filter((x) => x.status && (x.status.level === 'expired' || x.status.level === 'warn'));
 }
 
+// jugadores con documentación vencida o por vencer, para el resumen de
+// Inicio (admin). Agrupa las alertas de `docs` (todos los jugadores) por
+// jugador, y ordena por urgencia: primero las vencidas, luego las más
+// próximas a vencer.
+export function adminDocAlertsByPlayer({ players, docs, today = todayISO() }) {
+  const byPlayer = new Map();
+  for (const doc of docs || []) {
+    if (!byPlayer.has(doc.player_id)) byPlayer.set(doc.player_id, []);
+    byPlayer.get(doc.player_id).push(doc);
+  }
+  const rows = [];
+  for (const p of players || []) {
+    const alerts = adminDocAlerts(byPlayer.get(p.id), today).sort((a, b) => a.status.days - b.status.days);
+    if (alerts.length) rows.push({ player: p, alerts });
+  }
+  return rows.sort((a, b) => a.alerts[0].status.days - b.alerts[0].status.days);
+}
+
 // ── Partidos y RSVP ─────────────────────────────────────────
 
 // cancha local del club, valor por defecto al crear un partido de local

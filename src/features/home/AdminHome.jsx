@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { CC, SectionTitle, Toast } from '../../ui';
 import { useToast } from '../../lib/useToast';
-import { usePlayers, usePractices, useAttendance, useMatches, useRsvp, useActiveInjuries } from '../../lib/queries';
-import { injuredPlayers, todayISO } from '../../lib/domain';
+import { usePlayers, usePractices, useAttendance, useMatches, useRsvp, useActiveInjuries, useAllAdminDocs } from '../../lib/queries';
+import { injuredPlayers, adminDocAlertsByPlayer, todayISO } from '../../lib/domain';
 import { AdminMessages } from '../messages/AdminMessages';
 import { AdminDashboard } from './AdminDashboard';
 import { SanidadShortcut } from './SanidadShortcut';
+import { DocsExpiringCard } from './DocsExpiringCard';
 import { PlayerProfileScreen } from '../players/PlayerProfileScreen';
 
 function HomeLoading() {
@@ -29,8 +30,9 @@ export function AdminHome({ onGoToHealth }) {
   const matchesQ = useMatches();
   const rsvpQ = useRsvp();
   const injuriesQ = useActiveInjuries();
+  const docsQ = useAllAdminDocs();
 
-  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, injuriesQ];
+  const queries = [playersQ, practicesQ, attendanceQ, matchesQ, rsvpQ, injuriesQ, docsQ];
   if (queries.some((q) => q.isLoading)) return <HomeLoading />;
 
   if (openId != null) {
@@ -45,6 +47,7 @@ export function AdminHome({ onGoToHealth }) {
       <SectionTitle icon="home">Inicio</SectionTitle>
       <AdminMessages toast={showToast} />
       <SanidadShortcut count={injuredPlayers({ players, injuryByPlayer }).length} onOpen={onGoToHealth} />
+      <DocsExpiringCard rows={adminDocAlertsByPlayer({ players, docs: docsQ.data ?? [] })} onOpenPlayer={setOpenId} />
       <AdminDashboard
         players={players}
         practices={practicesQ.data ?? []}
