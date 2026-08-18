@@ -195,6 +195,22 @@ export function useDeleteInjuryProtocol() {
   });
 }
 
+// Elimina un registro del historial de lesiones (admin). Sus protocolos se
+// borran en cascada (FK injury_protocols.injury_id on delete cascade).
+export function useDeleteInjury() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('injuries').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['injuries'] });
+      queryClient.invalidateQueries({ queryKey: ['injury_protocols'] });
+    },
+  });
+}
+
 // Turnos de fisioterapia (todos), para la agenda admin/jugador.
 export function useFisioBookings() {
   return useQuery({ queryKey: ['fisio_bookings'], queryFn: () => selectAll('fisio_bookings') });

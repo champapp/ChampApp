@@ -1,11 +1,31 @@
 import { useState } from 'react';
 import { CC, Icon, fmtDate } from '../../ui';
 import { protocolsForInjury } from '../../lib/domain';
-import { useAllInjuries, useInjuryProtocols } from '../../lib/queries';
+import { useAllInjuries, useInjuryProtocols, useDeleteInjury, useDeleteInjuryProtocol } from '../../lib/queries';
 import { ProtocolItem } from './ProtocolItem';
 
-function PastInjuryRow({ injury, protocols }) {
+// Barra de confirmación en dos pasos: el primer click (afuera, en el botón
+// de basura) sólo abre esta barra; hay que tocar "Sí, eliminar" para que se
+// ejecute el borrado, que es permanente.
+function ConfirmBar({ label, pending, onCancel, onConfirm }) {
+  return (
+    <div style={{ marginTop: 8, padding: '9px 10px', background: 'rgba(224,82,78,0.07)', borderRadius: 10, border: `1px solid ${CC.bad}` }}>
+      <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.ink, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: 'flex', gap: 7 }}>
+        <button onClick={onCancel} style={{ flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy, padding: '7px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>Cancelar</button>
+        <button onClick={onConfirm} disabled={pending} style={{ flex: 1, border: 'none', background: CC.bad, color: '#fff', padding: '7px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>
+          {pending ? 'Eliminando…' : 'Sí, eliminar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PastInjuryRow({ injury, protocols, canDelete, onDeleteInjury, onDeleteProtocol, deletePending }) {
   const [open, setOpen] = useState(false);
+  const [confirmInjury, setConfirmInjury] = useState(false);
+  const [confirmProtoId, setConfirmProtoId] = useState(null);
+
   return (
     <div style={{ border: `1px solid ${CC.line}`, borderRadius: 12, overflow: 'hidden' }}>
       <button onClick={() => setOpen((v) => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 11px', border: 'none', background: CC.paper, cursor: 'pointer', textAlign: 'left' }}>
@@ -16,11 +36,43 @@ function PastInjuryRow({ injury, protocols }) {
           </div>
         </div>
         {protocols.length > 0 && <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: CC.faint, fontWeight: 600, flexShrink: 0 }}>{protocols.length} protocolo{protocols.length > 1 ? 's' : ''}</span>}
+        {canDelete && (
+          <span
+            role="button"
+            onClick={(e) => { e.stopPropagation(); setConfirmInjury((v) => !v); }}
+            title="Eliminar este registro"
+            style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(224,82,78,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
+          >
+            <Icon name="trash" size={13} color={CC.bad} sw={2.4} />
+          </span>
+        )}
         <Icon name={open ? 'chevUp' : 'chevron'} size={15} color={CC.faint} sw={2.3} />
       </button>
+      {confirmInjury && (
+        <div style={{ padding: '0 11px 10px', background: CC.paper }}>
+          <ConfirmBar
+            label="¿Eliminar este registro del historial? Se borra junto con sus protocolos y no se puede deshacer."
+            pending={deletePending}
+            onCancel={() => setConfirmInjury(false)}
+            onConfirm={() => onDeleteInjury(injury.id)}
+          />
+        </div>
+      )}
       {open && (
         <div style={{ padding: '10px 11px', borderTop: `1px solid ${CC.line}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {protocols.length ? protocols.map((pr) => <ProtocolItem key={pr.id} pr={pr} />) : (
+          {protocols.length ? protocols.map((pr) => (
+            <div key={pr.id}>
+              <ProtocolItem pr={pr} onDelete={canDelete ? () => setConfirmProtoId(pr.id) : undefined} />
+              {confirmProtoId === pr.id && (
+                <ConfirmBar
+                  label="¿Eliminar este protocolo? No se puede deshacer."
+                  pending={deletePending}
+                  onCancel={() => setConfirmProtoId(null)}
+                  onConfirm={() => onDeleteProtocol(pr.id)}
+                />
+              )}
+            </div>
+          )) : (
             <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.muted, textAlign: 'center' }}>Sin protocolos cargados.</div>
           )}
         </div>
@@ -31,10 +83,12 @@ function PastInjuryRow({ injury, protocols }) {
 
 // Historial de lesiones ya cerradas de un jugador (la activa se muestra
 // aparte, vía InjuryCard/SanidadRow). No renderiza nada si no tiene ninguna.
-export function InjuryHistoryCard({ playerId }) {
+export function InjuryHistoryCard({ playerId, canDelete = false, toast }) {
   const [open, setOpen] = useState(false);
   const injuriesQ = useAllInjuries();
   const protocolsQ = useInjuryProtocols();
+  const deleteInjuryMutation = useDeleteInjury();
+  const deleteProtocolMutation = useDeleteInjuryProtocol();
 
   if (injuriesQ.isLoading || protocolsQ.isLoading) return null;
 
@@ -61,7 +115,20 @@ export function InjuryHistoryCard({ playerId }) {
       {open && (
         <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {past.map((inj) => (
-            <PastInjuryRow key={inj.id} injury={inj} protocols={protocolsForInjury(allProtocols, inj.id)} />
+            <PastInjuryRow
+              key={inj.id}
+              injury={inj}
+              protocols={protocolsForInjury(allProtocols, inj.id)}
+              canDelete={canDelete}
+              deletePending={deleteInjuryMutation.isPending || deleteProtocolMutation.isPending}
+              onDeleteInjury={(id) => deleteInjuryMutation.mutate(id, {
+                onSuccess: () => toast && toast('Registro eliminado del historial'),
+                onError: () => toast && toast('No se pudo eliminar el registro'),
+              })}
+              onDeleteProtocol={(id) => deleteProtocolMutation.mutate(id, {
+                onError: () => toast && toast('No se pudo eliminar el protocolo'),
+              })}
+            />
           ))}
         </div>
       )}

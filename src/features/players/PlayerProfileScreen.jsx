@@ -194,7 +194,7 @@ export function PlayerProfileScreen({ playerId, onBack }) {
         )}
 
         {/* historial de lesiones cerradas */}
-        <InjuryHistoryCard playerId={p.id} />
+        <InjuryHistoryCard playerId={p.id} canDelete toast={showToast} />
 
         {/* documentación administrativa */}
         <AdminDocsCard player={p} canEdit toast={showToast} />
