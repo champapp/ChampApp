@@ -71,7 +71,7 @@ function SanidadRow({ player, injury, protocols, onTreat }) {
 
 // Sanidad (admin): jugadores en recuperación por categoría, agenda de fisio
 // y carga de tratamientos/protocolos.
-export function AdminHealthScreen() {
+export function AdminHealthScreen({ onOpenPlayer }) {
   const [toast, showToast] = useToast();
   const playersQ = usePlayers();
   const injuriesQ = useActiveInjuries();
@@ -154,7 +154,7 @@ export function AdminHealthScreen() {
         )}
       </Card>
 
-      <FisioAgenda mode="admin" injuryByPlayer={injuryByPlayer} onOpenTreatment={openTreatment} toast={showToast} />
+      <FisioAgenda mode="admin" injuryByPlayer={injuryByPlayer} onOpenTreatment={openTreatment} onOpenPlayer={onOpenPlayer} toast={showToast} />
       <InjuryStats />
 
       {picking && (

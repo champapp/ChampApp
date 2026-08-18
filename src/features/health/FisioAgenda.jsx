@@ -10,7 +10,7 @@ import { FisioBookModal } from './FisioBookModal';
 // `mode`: 'player' (reservar/cancelar el propio turno) o 'admin' (gestionar
 // turnos: tratamiento, liberar). `injuryByPlayer` (opcional, admin) muestra
 // el InjuryDot de cada jugador con turno.
-export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, toast }) {
+export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, onOpenPlayer, toast }) {
   const bookingsQ = useFisioBookings();
   const playersQ = usePlayers();
   const cancelMutation = useCancelFisio();
@@ -123,6 +123,7 @@ export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, t
                     ) : (
                       <div style={{ display: 'flex', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
                         {isAdmin && pl && <button onClick={() => onOpenTreatment && onOpenTreatment(pl)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: CC.navy, color: '#fff', borderRadius: 9, padding: '7px 13px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5 }}><Icon name="medkit" size={15} color={CC.gold} sw={2.4} />Tratamiento</button>}
+                        {isAdmin && pl && onOpenPlayer && <button onClick={() => onOpenPlayer(pl.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy, borderRadius: 9, padding: '7px 13px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5 }}><Icon name="medkit" size={15} color={CC.navy} sw={2.4} />Ver historial</button>}
                         {isAdmin && <button onClick={() => setReleasingId(b.id)} style={{ border: `1.5px solid ${CC.bad}`, background: 'rgba(224,82,78,0.06)', color: CC.bad, borderRadius: 9, padding: '7px 13px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5 }}>Liberar turno</button>}
                         {!isAdmin && b.player_id === playerId && <button onClick={() => cancelOwn(b.id)} style={{ border: `1.5px solid ${CC.bad}`, background: 'rgba(224,82,78,0.06)', color: CC.bad, borderRadius: 9, padding: '7px 13px', cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5 }}>Cancelar turno</button>}
                       </div>

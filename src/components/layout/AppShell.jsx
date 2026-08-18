@@ -127,7 +127,7 @@ export function AppShell() {
   } else if (!isAdmin && tab === 'health') {
     content = <PlayerHealthScreen />;
   } else if (isAdmin && tab === 'health') {
-    content = <AdminHealthScreen />;
+    content = <AdminHealthScreen onOpenPlayer={openPlayerFromAlert} />;
   } else if (tab === 'shop') {
     content = <ShopScreen isAdmin={isAdmin} player={!isAdmin ? player : undefined} />;
   } else if (isAdmin && tab === 'export') {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Ring, Empty, Toast, fmtPct, fmtDate, rateColor } from '../../ui';
 import { InjuryBadge } from '../../components/player/InjuryBadge';
+import { InjuryHistoryCard } from '../../components/player/InjuryHistoryCard';
 import { StreakCard } from '../../components/player/StreakCard';
 import { MonthlySummaryCard } from '../../components/player/MonthlySummaryCard';
 import { ageFromBirth, playerAttendance, nextMatch, latestGymMarks, playerHistory, todayISO } from '../../lib/domain';
@@ -191,6 +192,9 @@ export function PlayerProfileScreen({ playerId, onBack }) {
             today={todayISO()}
           />
         )}
+
+        {/* historial de lesiones cerradas */}
+        <InjuryHistoryCard playerId={p.id} />
 
         {/* documentación administrativa */}
         <AdminDocsCard player={p} canEdit toast={showToast} />

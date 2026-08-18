@@ -4,6 +4,7 @@ import { protocolsForInjury } from '../../lib/domain';
 import { usePlayerInjury, useInjuryProtocols, useFisioBookings } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { InjuryCard } from '../../components/player/InjuryCard';
+import { InjuryHistoryCard } from '../../components/player/InjuryHistoryCard';
 import { PlayerFisioCard } from '../../components/player/PlayerFisioCard';
 import { FisioAgenda } from './FisioAgenda';
 
@@ -33,6 +34,8 @@ export function PlayerHealthScreen() {
           <InjuryCard injury={injury} protocols={protocols} />
         </div>
       )}
+
+      <InjuryHistoryCard playerId={player.id} />
 
       <PlayerFisioCard playerId={player.id} bookings={bookings} pad={false} toast={showToast} />
 
