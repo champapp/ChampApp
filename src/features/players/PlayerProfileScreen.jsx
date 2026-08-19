@@ -147,7 +147,7 @@ export function PlayerProfileScreen({ playerId, onBack }) {
         </div>
       </div>
 
-      <DocExpiryBanner docs={adminDocsQ.data} />
+      <DocExpiryBanner docs={adminDocsQ.data} cat={p.cat} />
 
       <div style={{ padding: '16px 16px 0' }}>
         {/* próximo partido */}

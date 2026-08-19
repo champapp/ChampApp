@@ -1,9 +1,10 @@
 import { CC, Icon, fmtDate } from '../../ui';
 import { adminDocAlerts } from '../../lib/domain';
 
-// Alerta de documentación vencida o por vencer (≤1 mes) de un jugador.
-export function DocExpiryBanner({ docs, pad = true }) {
-  const alerts = adminDocAlerts(docs);
+// Alerta de documentación vencida o por vencer (≤1 mes) de un jugador,
+// filtrada a los tipos exigidos por su categoría.
+export function DocExpiryBanner({ docs, cat, pad = true }) {
+  const alerts = adminDocAlerts(docs, cat);
   if (!alerts.length) return null;
 
   const expired = alerts.some((a) => a.status.level === 'expired');

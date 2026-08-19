@@ -244,7 +244,7 @@ export function EditPlayerSheet({ player, onClose, onSaved, onDeleted, toast, se
             <Field label="Cédula de identidad (CI)"><TextInput value={f.ci} onChange={(e) => set('ci', e.target.value)} placeholder="Ej: 5.123.456-7" /></Field>
           </div>
 
-          {selfEdit && <AdminDocsEditor playerId={player.id} />}
+          {selfEdit && <AdminDocsEditor playerId={player.id} cat={player.cat} />}
 
           {!selfEdit && (
             <Field label="Usuario de acceso"><TextInput value={f.username} onChange={(e) => set('username', e.target.value)} style={{ fontFamily: 'ui-monospace, monospace' }} /></Field>

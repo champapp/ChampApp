@@ -475,7 +475,16 @@ export function protocolsForInjury(protocols, injuryId) {
 }
 
 // ── Documentación administrativa ───────────────────────────
-export const ADMIN_DOC_TYPES = ['Ficha médica', 'Curso Conmoción', 'Rugby Ready', 'Antidoping'];
+
+// Qué documentos se exigen según categoría: los menores de M7 a M13 solo
+// llevan ficha médica; M15/M17 suman conmoción y Rugby Ready (sin
+// antidoping); M19/PS suman conmoción y antidoping (sin Rugby Ready, que
+// es exclusivo de menores).
+export function adminDocTypesForCategory(cat) {
+  if (cat === 'M15' || cat === 'M17') return ['Ficha médica', 'Curso Conmoción', 'Rugby Ready'];
+  if (cat === 'M19' || cat === 'PS') return ['Ficha médica', 'Curso Conmoción', 'Antidoping'];
+  return ['Ficha médica'];
+}
 
 export function adminDocStatus(doc, today = todayISO()) {
   if (!doc || !doc.type || !doc.expiry) return null;
@@ -485,17 +494,20 @@ export function adminDocStatus(doc, today = todayISO()) {
   return { days, level: 'ok' };
 }
 
-// documentos vencidos o por vencer (≤1 mes) de un jugador
-export function adminDocAlerts(docs, today = todayISO()) {
+// documentos vencidos o por vencer (≤1 mes) de un jugador. Si se pasa
+// `cat`, sólo considera los tipos exigidos a esa categoría.
+export function adminDocAlerts(docs, cat = null, today = todayISO()) {
+  const allowed = cat ? new Set(adminDocTypesForCategory(cat)) : null;
   return (docs || [])
+    .filter((doc) => !allowed || allowed.has(doc.type))
     .map((doc) => ({ doc, status: adminDocStatus(doc, today) }))
     .filter((x) => x.status && (x.status.level === 'expired' || x.status.level === 'warn'));
 }
 
 // jugadores con documentación vencida o por vencer, para el resumen de
 // Inicio (admin). Agrupa las alertas de `docs` (todos los jugadores) por
-// jugador, y ordena por urgencia: primero las vencidas, luego las más
-// próximas a vencer.
+// jugador, filtrando por los tipos exigidos a su categoría, y ordena por
+// urgencia: primero las vencidas, luego las más próximas a vencer.
 export function adminDocAlertsByPlayer({ players, docs, today = todayISO() }) {
   const byPlayer = new Map();
   for (const doc of docs || []) {
@@ -504,7 +516,7 @@ export function adminDocAlertsByPlayer({ players, docs, today = todayISO() }) {
   }
   const rows = [];
   for (const p of players || []) {
-    const alerts = adminDocAlerts(byPlayer.get(p.id), today).sort((a, b) => a.status.days - b.status.days);
+    const alerts = adminDocAlerts(byPlayer.get(p.id), p.cat, today).sort((a, b) => a.status.days - b.status.days);
     if (alerts.length) rows.push({ player: p, alerts });
   }
   return rows.sort((a, b) => a.alerts[0].status.days - b.alerts[0].status.days);

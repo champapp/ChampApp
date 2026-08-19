@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Card, SectionTitle, fmtDate } from '../../ui';
-import { ADMIN_DOC_TYPES, adminDocStatus } from '../../lib/domain';
+import { adminDocTypesForCategory, adminDocStatus } from '../../lib/domain';
 import { useAdminDocs, useUpsertAdminDoc } from '../../lib/queries';
 
 const docDateStyle = { boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 10, padding: '8px 9px', fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, background: '#fff' };
@@ -23,6 +23,7 @@ export function AdminDocsCard({ player, canEdit, toast }) {
   const [editing, setEditing] = useState(false);
 
   const docByType = new Map((docsQ.data ?? []).map((d) => [d.type, d]));
+  const docTypes = adminDocTypesForCategory(player.cat);
 
   function setExpiry(type, expiry) {
     upsert.mutate({ player_id: player.id, type, expiry }, {
@@ -44,7 +45,7 @@ export function AdminDocsCard({ player, canEdit, toast }) {
       )}>Administrativo</SectionTitle>
       <Card pad={13} style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: editing ? 8 : 10 }}>
-          {ADMIN_DOC_TYPES.map((type) => {
+          {docTypes.map((type) => {
             const doc = docByType.get(type) || { type, expiry: '' };
             const status = adminDocStatus(doc);
             if (editing) {

@@ -81,7 +81,7 @@ export function PlayerHome() {
           <InjuryCard injury={injury} protocols={protocols} />
         </div>
       )}
-      <DocExpiryBanner docs={adminDocsQ.data} />
+      <DocExpiryBanner docs={adminDocsQ.data} cat={player.cat} />
       <PlayerFisioCard playerId={player.id} bookings={fisioQ.data ?? []} toast={showToast} />
       <PlayerLineups me={player} />
       {d.nextMatch && (
