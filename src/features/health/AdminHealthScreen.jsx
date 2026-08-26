@@ -27,21 +27,23 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
     <div style={{ border: `1px solid ${CC.line}`, borderRadius: 14, background: '#fff', overflow: 'hidden' }}>
       <button onClick={() => setExp((v) => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '10px 11px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
         <Avatar name={player.name} photo={player.photo_url} size={40} />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: trainingShort ? '0 1 auto' : 1, maxWidth: trainingShort ? 150 : undefined, minWidth: 0 }}>
           <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 15, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</div>
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{st.reason || 'Lesión sin diagnóstico cargado'}</div>
         </div>
+        {trainingShort && (
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'center' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: trainingBg, color: trainingCol, borderRadius: 999, padding: '3px 9px', flexShrink: 0 }}>
+              <Icon name="weight" size={11} color={trainingCol} sw={2.5} />
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>{trainingShort}</span>
+            </span>
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: red ? 'rgba(224,82,78,0.1)' : 'rgba(249,178,51,0.16)', color: col, borderRadius: 999, padding: '3px 9px' }}>
             <Icon name="clock" size={12} color={col} sw={2.5} />
             <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>{st.days <= 0 ? 'vuelve hoy' : st.days + (st.days === 1 ? ' día' : ' días')}</span>
           </span>
-          {trainingShort && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: trainingBg, color: trainingCol, borderRadius: 999, padding: '3px 9px' }}>
-              <Icon name="weight" size={11} color={trainingCol} sw={2.5} />
-              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>{trainingShort}</span>
-            </span>
-          )}
           {protocols.length > 0 && <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: CC.faint, fontWeight: 600 }}>{protocols.length} protocolo{protocols.length > 1 ? 's' : ''}</span>}
         </div>
         <Icon name={exp ? 'chevUp' : 'chevron'} size={17} color={CC.faint} sw={2.3} />
