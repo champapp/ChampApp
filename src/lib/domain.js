@@ -451,6 +451,7 @@ export const TRAINING_TYPES = [
   { id: 'no_contact', label: 'Entrena sin contacto' },
   { id: 'physical_only', label: 'Entrena solo físico' },
   { id: 'pain_tolerance', label: 'Entrena a tolerancia del dolor' },
+  { id: 'none', label: 'No entrena' },
 ];
 
 export function trainingTypeLabel(id) {
