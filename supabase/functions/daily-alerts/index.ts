@@ -29,7 +29,10 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 // 1. Recordatorio RSVP: jugadores que no contestaron la encuesta de un partido activo
 // 2. Lunes: recordatorio de partido este fin de semana
 // 3. Documentación administrativa que vence en 30 días
-// 4. Lesiones cuya fecha de retorno es hoy
+// 4. Alta médica automática: cierra toda lesión cuya fecha de retorno ya
+//    llegó (hoy o antes) y todavía no fue dada de alta manualmente. Solo
+//    avisa a los admins el día exacto del retorno, para no repetir el
+//    aviso de lesiones atrasadas que ya venían sin cerrar.
 Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization') ?? '';
   if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
@@ -149,15 +152,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 4. Lesiones cuya fecha de retorno es hoy ─────────────────────────────
+    // ── 4. Alta médica automática: retorno hoy o atrasado ────────────────────
     const { data: injuries, error: injuriesErr } = await supabase
       .from('injuries')
-      .select('player_id, return_date, players(name)')
-      .eq('return_date', today)
+      .select('id, player_id, return_date, players(name)')
+      .lte('return_date', today)
       .is('closed_at', null);
     if (injuriesErr) throw injuriesErr;
 
     for (const inj of injuries ?? []) {
+      if (inj.return_date !== today) continue; // aviso solo el día exacto
       await sendPushToSubscriptions(supabase, adminSubs, {
         title: 'Alta médica',
         body: `${inj.players?.name ?? 'Un jugador'} cumple hoy su fecha de retorno.`,
@@ -165,11 +169,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    if ((injuries ?? []).length) {
+      const { error: closeErr } = await supabase
+        .from('injuries')
+        .update({ closed_at: new Date().toISOString() })
+        .in('id', injuries.map((inj) => inj.id));
+      if (closeErr) throw closeErr;
+    }
+
     return new Response(JSON.stringify({
       rsvpReminders,
       mondayAlerts,
       docs: docs?.length ?? 0,
-      injuries: injuries?.length ?? 0,
+      injuriesClosed: injuries?.length ?? 0,
     }), { headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error(err);

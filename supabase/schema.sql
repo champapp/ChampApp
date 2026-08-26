@@ -672,7 +672,8 @@ end $$;
 -- ============================================================
 -- ALARMAS DIARIAS: pg_cron llama todos los dias a las 11:00 UTC
 -- (08:00 Montevideo) a la Edge Function `daily-alerts`, que revisa
--- documentacion por vencer (30 dias) y lesiones con alta de hoy.
+-- documentacion por vencer (30 dias) y da de alta automaticamente toda
+-- lesion cuya fecha de retorno ya llego (hoy o antes).
 --
 -- La funcion valida un secreto compartido (CRON_SECRET) en el header
 -- Authorization -- no usa tu service_role key.
