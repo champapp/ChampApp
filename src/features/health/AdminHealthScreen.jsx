@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Toast, fmtDate } from '../../ui';
-import { injuryStatus, injuredPlayers, protocolsForInjury, catById, trainingTypeLabel } from '../../lib/domain';
+import { injuryStatus, injuredPlayers, protocolsForInjury, catById, trainingTypeLabel, trainingTypeShortLabel, trainingTypeColor } from '../../lib/domain';
 import { usePlayers, useActiveInjuries, useInjuryProtocols } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { ProtocolItem } from '../../components/player/ProtocolItem';
@@ -18,6 +18,10 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
   const red = st.color === 'red';
   const col = red ? CC.bad : CC.gold;
   const training = trainingTypeLabel(injury?.training_type);
+  const trainingShort = trainingTypeShortLabel(injury?.training_type);
+  const trainingColorId = trainingTypeColor(injury?.training_type);
+  const trainingCol = trainingColorId === 'good' ? CC.good : trainingColorId === 'bad' ? CC.bad : CC.goldDeep;
+  const trainingBg = trainingColorId === 'good' ? 'rgba(30,158,106,0.12)' : trainingColorId === 'bad' ? 'rgba(224,82,78,0.1)' : 'rgba(249,178,51,0.16)';
 
   return (
     <div style={{ border: `1px solid ${CC.line}`, borderRadius: 14, background: '#fff', overflow: 'hidden' }}>
@@ -32,6 +36,12 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
             <Icon name="clock" size={12} color={col} sw={2.5} />
             <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>{st.days <= 0 ? 'vuelve hoy' : st.days + (st.days === 1 ? ' día' : ' días')}</span>
           </span>
+          {trainingShort && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: trainingBg, color: trainingCol, borderRadius: 999, padding: '3px 9px' }}>
+              <Icon name="weight" size={11} color={trainingCol} sw={2.5} />
+              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>{trainingShort}</span>
+            </span>
+          )}
           {protocols.length > 0 && <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: CC.faint, fontWeight: 600 }}>{protocols.length} protocolo{protocols.length > 1 ? 's' : ''}</span>}
         </div>
         <Icon name={exp ? 'chevUp' : 'chevron'} size={17} color={CC.faint} sw={2.3} />

@@ -445,17 +445,31 @@ export function playerBadges({ attendance, streak, categoryAvg, gymMarks = [] })
 
 // ── Lesiones ────────────────────────────────────────────────
 
-// tipo de entrenamiento habilitado mientras dura la recuperación
+// tipo de entrenamiento habilitado mientras dura la recuperación.
+// `short` es para espacios compactos (ej. la fila colapsada de Sanidad).
 export const TRAINING_TYPES = [
-  { id: 'normal', label: 'Entrena normal' },
-  { id: 'no_contact', label: 'Entrena sin contacto' },
-  { id: 'physical_only', label: 'Entrena solo físico' },
-  { id: 'pain_tolerance', label: 'Entrena a tolerancia del dolor' },
-  { id: 'none', label: 'No entrena' },
+  { id: 'normal', label: 'Entrena normal', short: 'Normal' },
+  { id: 'no_contact', label: 'Entrena sin contacto', short: 'Sin contacto' },
+  { id: 'physical_only', label: 'Entrena solo físico', short: 'Solo físico' },
+  { id: 'pain_tolerance', label: 'Entrena a tolerancia del dolor', short: 'Tolera dolor' },
+  { id: 'none', label: 'No entrena', short: 'No entrena' },
 ];
 
 export function trainingTypeLabel(id) {
   return TRAINING_TYPES.find((t) => t.id === id)?.label || null;
+}
+
+export function trainingTypeShortLabel(id) {
+  return TRAINING_TYPES.find((t) => t.id === id)?.short || null;
+}
+
+// color de semáforo para el estado de entrenamiento: verde si entrena
+// normal, rojo si no entrena, ámbar para los intermedios (con restricciones)
+export function trainingTypeColor(id) {
+  if (id === 'normal') return 'good';
+  if (id === 'none') return 'bad';
+  if (id) return 'gold';
+  return null;
 }
 
 // estado de una lesión activa (o null si ya retornó / no hay lesión)
