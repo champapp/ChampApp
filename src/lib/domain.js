@@ -445,6 +445,18 @@ export function playerBadges({ attendance, streak, categoryAvg, gymMarks = [] })
 
 // ── Lesiones ────────────────────────────────────────────────
 
+// tipo de entrenamiento habilitado mientras dura la recuperación
+export const TRAINING_TYPES = [
+  { id: 'normal', label: 'Entrena normal' },
+  { id: 'no_contact', label: 'Entrena sin contacto' },
+  { id: 'physical_only', label: 'Entrena solo físico' },
+  { id: 'pain_tolerance', label: 'Entrena a tolerancia del dolor' },
+];
+
+export function trainingTypeLabel(id) {
+  return TRAINING_TYPES.find((t) => t.id === id)?.label || null;
+}
+
 // estado de una lesión activa (o null si ya retornó / no hay lesión)
 export function injuryStatus(injury, today = todayISO()) {
   if (!injury || !injury.return_date) return null;

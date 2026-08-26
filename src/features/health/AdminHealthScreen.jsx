@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Toast, fmtDate } from '../../ui';
-import { injuryStatus, injuredPlayers, protocolsForInjury, catById } from '../../lib/domain';
+import { injuryStatus, injuredPlayers, protocolsForInjury, catById, trainingTypeLabel } from '../../lib/domain';
 import { usePlayers, useActiveInjuries, useInjuryProtocols } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { ProtocolItem } from '../../components/player/ProtocolItem';
@@ -17,6 +17,7 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
   if (!st) return null;
   const red = st.color === 'red';
   const col = red ? CC.bad : CC.gold;
+  const training = trainingTypeLabel(injury?.training_type);
 
   return (
     <div style={{ border: `1px solid ${CC.line}`, borderRadius: 14, background: '#fff', overflow: 'hidden' }}>
@@ -38,16 +39,22 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
 
       {exp && (
         <div style={{ padding: '0 11px 12px', borderTop: `1px solid ${CC.line}` }}>
-          <div style={{ display: 'flex', gap: 8, marginTop: 11 }}>
-            <div style={{ flex: 1, background: 'rgba(14,58,92,0.04)', borderRadius: 11, padding: '9px 11px' }}>
-              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase' }}>Diagnóstico</div>
-              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.ink, marginTop: 3, lineHeight: 1.35 }}>{st.reason || '—'}</div>
-            </div>
-            <div style={{ width: 124, flexShrink: 0, background: red ? 'rgba(224,82,78,0.07)' : 'rgba(249,178,51,0.1)', borderRadius: 11, padding: '9px 11px' }}>
+          <div style={{ marginTop: 11, background: 'rgba(14,58,92,0.04)', borderRadius: 11, padding: '9px 11px' }}>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase' }}>Diagnóstico</div>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.ink, marginTop: 3, lineHeight: 1.35 }}>{st.reason || '—'}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div style={{ flex: 1, background: red ? 'rgba(224,82,78,0.07)' : 'rgba(249,178,51,0.1)', borderRadius: 11, padding: '9px 11px' }}>
               <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase' }}>Vuelve a la cancha</div>
               <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color: col, marginTop: 2, lineHeight: 1.1 }}>{fmtDate(st.returnDate)}</div>
               <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, color: CC.muted }}>{st.days <= 0 ? 'estimado hoy' : 'en ' + st.days + (st.days === 1 ? ' día' : ' días')}</div>
             </div>
+            {training && (
+              <div style={{ flex: 1, background: 'rgba(14,58,92,0.04)', borderRadius: 11, padding: '9px 11px' }}>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase' }}>Entrenamiento</div>
+                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: CC.navy, marginTop: 2, lineHeight: 1.2 }}>{training}</div>
+              </div>
+            )}
           </div>
 
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase', margin: '13px 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>

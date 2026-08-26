@@ -67,14 +67,17 @@ create table if not exists public.gym_marks (
 create index if not exists gym_marks_player_idx on public.gym_marks (player_id);
 
 -- Lesiones. closed_at = NULL -> lesion activa; closed_at seteado -> archivada
+-- training_type: que tipo de entrenamiento puede hacer el jugador mientras
+-- dura la recuperacion (ver TRAINING_TYPES en src/lib/domain.js).
 create table if not exists public.injuries (
-  id          bigint generated always as identity primary key,
-  player_id   bigint not null references public.players(id) on delete cascade,
-  reason      text,
-  since       date,
-  return_date date,
-  closed_at   timestamptz,
-  created_at  timestamptz not null default now()
+  id            bigint generated always as identity primary key,
+  player_id     bigint not null references public.players(id) on delete cascade,
+  reason        text,
+  since         date,
+  return_date   date,
+  training_type text,
+  closed_at     timestamptz,
+  created_at    timestamptz not null default now()
 );
 create index if not exists injuries_player_idx on public.injuries (player_id);
 

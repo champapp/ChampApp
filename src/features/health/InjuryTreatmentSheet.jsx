@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CC, Icon, Field, TextInput } from '../../ui';
-import { todayISO } from '../../lib/domain';
+import { CC, Icon, Field, TextInput, SelectInput } from '../../ui';
+import { todayISO, TRAINING_TYPES } from '../../lib/domain';
 import { useSetInjury, useCloseInjury, useAddInjuryProtocol, useDeleteInjuryProtocol } from '../../lib/queries';
 import { ProtocolItem } from '../../components/player/ProtocolItem';
 
@@ -10,6 +10,7 @@ import { ProtocolItem } from '../../components/player/ProtocolItem';
 export function InjuryTreatmentSheet({ player, injury, protocols = [], onClose, toast }) {
   const [diag, setDiag] = useState(injury ? injury.reason || '' : '');
   const [ret, setRet] = useState(injury ? injury.return_date || '' : '');
+  const [training, setTraining] = useState(injury ? injury.training_type || '' : '');
   const [txt, setTxt] = useState('');
 
   const setInjuryMutation = useSetInjury();
@@ -20,8 +21,8 @@ export function InjuryTreatmentSheet({ player, injury, protocols = [], onClose, 
   function save() {
     if (!ret) { toast && toast('Indicá la fecha de retorno a la cancha'); return; }
     const payload = injury
-      ? { id: injury.id, reason: diag.trim(), return_date: ret }
-      : { player_id: player.id, reason: diag.trim(), return_date: ret, since: todayISO() };
+      ? { id: injury.id, reason: diag.trim(), return_date: ret, training_type: training || null }
+      : { player_id: player.id, reason: diag.trim(), return_date: ret, since: todayISO(), training_type: training || null };
     setInjuryMutation.mutate(payload, {
       onSuccess: () => { onClose(); toast && toast('Tratamiento guardado'); },
       onError: () => toast && toast('No se pudo guardar el tratamiento'),
@@ -68,9 +69,17 @@ export function InjuryTreatmentSheet({ player, injury, protocols = [], onClose, 
           <Field label="Diagnóstico">
             <textarea value={diag} onChange={(e) => setDiag(e.target.value)} rows={2} placeholder="Ej: Esguince de tobillo grado I (ligamento lateral externo)" style={{ width: '100%', boxSizing: 'border-box', border: `1.5px solid ${CC.line}`, borderRadius: 11, padding: '11px 12px', fontFamily: 'Barlow, sans-serif', fontSize: 15, color: CC.ink, background: '#fff', resize: 'none', lineHeight: 1.35 }} />
           </Field>
-          <Field label="Fecha de retorno a la cancha">
-            <TextInput type="date" value={ret} onChange={(e) => setRet(e.target.value)} />
-          </Field>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Field label="Fecha de retorno a la cancha" half>
+              <TextInput type="date" value={ret} onChange={(e) => setRet(e.target.value)} />
+            </Field>
+            <Field label="Tipo de entrenamiento" half>
+              <SelectInput value={training} onChange={(e) => setTraining(e.target.value)}>
+                <option value="">Sin definir</option>
+                {TRAINING_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </SelectInput>
+            </Field>
+          </div>
 
           {injury ? (
             <div>
