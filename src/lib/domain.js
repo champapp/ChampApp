@@ -612,10 +612,15 @@ export function isSurveyActive(match, today = todayISO()) {
   return today >= mondayOf(match.date) && today <= match.date;
 }
 
-// partido cuya encuesta RSVP está activa para una categoría, si lo hay
-export function surveyMatch({ matches, cat, sub, today = todayISO() }) {
-  const m = nextMatch({ matches, cat, sub, today });
-  return m && isSurveyActive(m, today) ? m : null;
+// partidos cuya encuesta RSVP está activa para una categoría, en orden de
+// fecha. Puede haber más de uno si la categoría juega varias veces en la
+// misma semana (ej: M17 con partido sábado y domingo) — las encuestas de
+// todos arrancan juntas el lunes de esa semana.
+export function surveyMatches({ matches, cat, sub, today = todayISO() }) {
+  return matches
+    .filter((m) => m.cat === cat && (sub == null || !m.sub || m.sub === sub))
+    .filter((m) => isSurveyActive(m, today))
+    .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 }
 
 // estadística de RSVP de un partido sobre el plantel de su categoría

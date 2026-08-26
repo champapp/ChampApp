@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, matchLongDate } from '../../ui';
-import { surveyMatch, matchRsvpStats, matchTimeLabel } from '../../lib/domain';
+import { surveyMatches, matchRsvpStats, matchTimeLabel } from '../../lib/domain';
 import { usePlayers, useMatches, useRsvp, useSetRsvp } from '../../lib/queries';
 
 // barra de convocatoria de la categoría (cuántos asisten / no / sin responder)
@@ -34,24 +34,15 @@ function ConvoBar({ stats, label, light }) {
   );
 }
 
-// Encuesta de asistencia al próximo partido (jugador). Aparece en Inicio y Calendario.
-// `onlyIfPending`: solo se muestra mientras el jugador no respondió (la usa
-// el Inicio, que la oculta una vez contestada porque pasa a verse en Calendario).
-export function RsvpSurveyCard({ me, onlyIfPending = false, pad = true }) {
+// Una encuesta de asistencia a un partido puntual. `RsvpSurveyCard` renderiza
+// una de éstas por cada partido con encuesta activa (puede haber más de una,
+// ej. la categoría juega sábado y domingo el mismo finde).
+function SurveyMatchCard({ m, me, players, rsvp, setRsvp, onlyIfPending, pad }) {
   const [expand, setExpand] = useState(false);
-  const playersQ = usePlayers();
-  const matchesQ = useMatches();
-  const rsvpQ = useRsvp();
-  const setRsvp = useSetRsvp();
 
-  if (playersQ.isLoading || matchesQ.isLoading || rsvpQ.isLoading) return null;
-
-  const m = surveyMatch({ matches: matchesQ.data, cat: me.cat, sub: me.sub });
-  if (!m) return null;
-
-  const vote = rsvpQ.data.find((r) => r.match_id === m.id && r.player_id === me.id)?.answer ?? null;
+  const vote = rsvp.find((r) => r.match_id === m.id && r.player_id === me.id)?.answer ?? null;
   if (onlyIfPending && vote != null) return null;
-  const stats = matchRsvpStats({ players: playersQ.data, rsvp: rsvpQ.data, matchId: m.id, cat: me.cat, sub: null });
+  const stats = matchRsvpStats({ players, rsvp, matchId: m.id, cat: me.cat, sub: null });
 
   function setVote(v) {
     setRsvp.mutate({ matchId: m.id, playerId: me.id, answer: v === vote ? null : v });
@@ -125,4 +116,25 @@ export function RsvpSurveyCard({ me, onlyIfPending = false, pad = true }) {
       </div>
     </div>
   );
+}
+
+// Encuesta(s) de asistencia a los próximos partidos (jugador). Aparece en
+// Inicio y Calendario. Si la categoría tiene más de un partido activo la
+// misma semana (ej: M17 sábado y domingo), muestra una tarjeta por cada uno.
+// `onlyIfPending`: solo se muestra mientras el jugador no respondió (la usa
+// el Inicio, que la oculta una vez contestada porque pasa a verse en Calendario).
+export function RsvpSurveyCard({ me, onlyIfPending = false, pad = true }) {
+  const playersQ = usePlayers();
+  const matchesQ = useMatches();
+  const rsvpQ = useRsvp();
+  const setRsvp = useSetRsvp();
+
+  if (playersQ.isLoading || matchesQ.isLoading || rsvpQ.isLoading) return null;
+
+  const ms = surveyMatches({ matches: matchesQ.data, cat: me.cat, sub: me.sub });
+  if (!ms.length) return null;
+
+  return ms.map((m) => (
+    <SurveyMatchCard key={m.id} m={m} me={me} players={playersQ.data} rsvp={rsvpQ.data} setRsvp={setRsvp} onlyIfPending={onlyIfPending} pad={pad} />
+  ));
 }
