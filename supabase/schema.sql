@@ -652,6 +652,32 @@ create policy shop_photos_admin_delete on storage.objects
   for delete to authenticated using (bucket_id = 'shop-photos' and public.is_admin());
 
 -- ============================================================
+-- STORAGE: bucket de adjuntos de comunicados (PDF o imagen)
+-- ============================================================
+
+insert into storage.buckets (id, name, public)
+values ('message-files', 'message-files', true)
+on conflict (id) do nothing;
+
+drop policy if exists message_files_public_read on storage.objects;
+create policy message_files_public_read on storage.objects
+  for select using (bucket_id = 'message-files');
+
+drop policy if exists message_files_admin_insert on storage.objects;
+create policy message_files_admin_insert on storage.objects
+  for insert to authenticated with check (bucket_id = 'message-files' and public.is_admin());
+
+drop policy if exists message_files_admin_update on storage.objects;
+create policy message_files_admin_update on storage.objects
+  for update to authenticated
+  using (bucket_id = 'message-files' and public.is_admin())
+  with check (bucket_id = 'message-files' and public.is_admin());
+
+drop policy if exists message_files_admin_delete on storage.objects;
+create policy message_files_admin_delete on storage.objects
+  for delete to authenticated using (bucket_id = 'message-files' and public.is_admin());
+
+-- ============================================================
 -- REALTIME: publica cambios en vivo de las tablas mas "compartidas"
 -- (asistencia, RSVP, comunicados, alineaciones, turnos de fisio y
 -- partidos), para que todos los usuarios conectados vean los cambios
