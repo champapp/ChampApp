@@ -17,10 +17,23 @@ function messageAudienceToPush(cats) {
   return { type: 'all' };
 }
 
+// Trae todas las filas de una tabla, paginando de a 1000 (el límite que
+// aplica Supabase/PostgREST a un select sin range/limit). Sin esto, una
+// tabla que crece más allá de 1000 filas (rsvp, practices, etc.) empieza a
+// perder silenciosamente las últimas filas cargadas.
 async function selectAll(table, columns = '*') {
-  const { data, error } = await supabase.from(table).select(columns);
-  if (error) throw error;
-  return data ?? [];
+  const pageSize = 1000;
+  let from = 0;
+  const all = [];
+  while (true) {
+    const { data, error } = await supabase.from(table).select(columns).range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
 }
 
 export function usePlayers() {
@@ -51,26 +64,7 @@ export function usePractices() {
 }
 
 export function useAttendance() {
-  return useQuery({
-    queryKey: ['attendance'],
-    queryFn: async () => {
-      const pageSize = 1000;
-      let from = 0;
-      const all = [];
-      while (true) {
-        const { data, error } = await supabase
-          .from('attendance')
-          .select('*')
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        all.push(...data);
-        if (data.length < pageSize) break;
-        from += pageSize;
-      }
-      return all;
-    },
-  });
+  return useQuery({ queryKey: ['attendance'], queryFn: () => selectAll('attendance') });
 }
 
 export function useMatches() {

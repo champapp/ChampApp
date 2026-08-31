@@ -39,13 +39,18 @@ function ConvoBar({ stats, label, light }) {
 // ej. la categoría juega sábado y domingo el mismo finde).
 function SurveyMatchCard({ m, me, players, rsvp, setRsvp, onlyIfPending, pad }) {
   const [expand, setExpand] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const vote = rsvp.find((r) => r.match_id === m.id && r.player_id === me.id)?.answer ?? null;
   if (onlyIfPending && vote != null) return null;
   const stats = matchRsvpStats({ players, rsvp, matchId: m.id, cat: me.cat, sub: null });
 
   function setVote(v) {
-    setRsvp.mutate({ matchId: m.id, playerId: me.id, answer: v === vote ? null : v });
+    setSaveError(null);
+    setRsvp.mutate(
+      { matchId: m.id, playerId: me.id, answer: v === vote ? null : v },
+      { onError: (err) => setSaveError(err?.message || 'No se pudo guardar tu respuesta.') }
+    );
     setExpand(false);
   }
 
@@ -110,6 +115,11 @@ function SurveyMatchCard({ m, me, players, rsvp, setRsvp, onlyIfPending, pad }) 
           {btn('yes', 'Asistiré', 'check', CC.good)}
           {btn('no', 'No asistiré', 'x', CC.bad)}
         </div>
+        {saveError && (
+          <div style={{ margin: '0 16px 12px', padding: '9px 11px', borderRadius: 10, background: 'rgba(220,53,69,0.16)', border: '1px solid rgba(220,53,69,0.4)', position: 'relative' }}>
+            <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: '#ffb3ba' }}>No se pudo guardar: {saveError}</span>
+          </div>
+        )}
         <div style={{ padding: '12px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
           <ConvoBar stats={stats} label={me.cat} light />
         </div>
