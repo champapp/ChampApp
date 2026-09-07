@@ -1,6 +1,3 @@
-// Escudo propio del club, para mostrar junto al del rival en los "vs".
-export const CHAMPAGNAT_CREST = '/assets/escudo.png';
-
 // Escudos de los rivales del Top 12 uruguayo. El nombre del rival lo carga
 // el admin a mano y no sigue un formato fijo (siglas, typos, encuentros con
 // varios equipos a la vez), así que el reconocimiento es por substring, no

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { CC, RivalCrest } from '../../ui';
-import { rivalCrestSrc, CHAMPAGNAT_CREST } from '../../lib/rivalCrests';
 import { supabase } from '../../lib/supabaseClient';
 
 const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -37,14 +36,13 @@ export function NextMatchStrip() {
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
         background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 999, padding: '6px 14px 6px 7px', backdropFilter: 'blur(6px)',
+        borderRadius: 999, padding: '6px 14px', backdropFilter: 'blur(6px)',
         fontFamily: 'Barlow Condensed, sans-serif', fontSize: 13.5, whiteSpace: 'nowrap',
       }}>
-        {rivalCrestSrc(match.rival) && <img src={CHAMPAGNAT_CREST} alt="Champagnat" style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 5, background: '#fff', padding: 2, flexShrink: 0 }} />}
-        <RivalCrest rival={match.rival} size={20} style={{ borderRadius: 5, background: '#fff', padding: 2 }} />
         <span style={{ fontWeight: 700, color: CC.gold, letterSpacing: 0.3 }}>1ª</span>
         <span style={{ color: 'rgba(255,255,255,0.35)' }}>·</span>
         <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.88)', letterSpacing: 0.2 }}>{fmtMatchDate(match.date)} · vs {match.rival}{rest ? ' · ' + rest : ''}</span>
+        <RivalCrest rival={match.rival} size={18} style={{ borderRadius: 5, background: '#fff', padding: 2, flexShrink: 0 }} />
       </div>
     </div>
   );
