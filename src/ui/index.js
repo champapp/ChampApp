@@ -3,6 +3,7 @@ export { Icon } from './Icon';
 export { Card } from './Card';
 export { Segmented } from './Segmented';
 export { Crest } from './Crest';
+export { RivalCrest } from './RivalCrest';
 export { Avatar } from './Avatar';
 export { Ring } from './Ring';
 export { SectionTitle } from './SectionTitle';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CC, Icon, matchLongDate } from '../../ui';
+import { CC, Icon, RivalCrest, matchLongDate } from '../../ui';
+import { rivalCrestSrc } from '../../lib/rivalCrests';
 import { surveyMatches, matchRsvpStats, matchTimeLabel } from '../../lib/domain';
 import { usePlayers, useMatches, useRsvp, useSetRsvp } from '../../lib/queries';
 
@@ -76,7 +77,9 @@ function SurveyMatchCard({ m, me, players, rsvp, setRsvp, onlyIfPending, pad }) 
       <div style={wrapStyle}>
         <div style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', background: `linear-gradient(155deg, ${CC.navy} 0%, ${CC.navy900} 100%)`, boxShadow: '0 5px 16px rgba(7,36,61,0.16)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px' }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name="versus" size={18} color={CC.gold} sw={2.2} /></div>
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: rivalCrestSrc(m.rival) ? '#fff' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: rivalCrestSrc(m.rival) ? 3 : 0 }}>
+              {rivalCrestSrc(m.rival) ? <RivalCrest rival={m.rival} size={26} /> : <Icon name="versus" size={18} color={CC.gold} sw={2.2} />}
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Encuesta · {matchLongDate(m.date)}</div>
               <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, color: '#fff', lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.home ? 'vs' : '@'} {m.rival}</div>
@@ -108,7 +111,10 @@ function SurveyMatchCard({ m, me, players, rsvp, setRsvp, onlyIfPending, pad }) 
             <Icon name="versus" size={17} color={CC.gold} sw={2.3} />
             <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 1, color: CC.gold, textTransform: 'uppercase' }}>¿Vas al partido?</span>
           </div>
-          <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 23, color: '#fff', lineHeight: 1 }}>{m.home ? 'Local vs' : 'Visitante vs'} {m.rival}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <RivalCrest rival={m.rival} size={26} style={{ borderRadius: 7, background: '#fff', padding: 2 }} />
+            <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 23, color: '#fff', lineHeight: 1 }}>{m.home ? 'Local vs' : 'Visitante vs'} {m.rival}</div>
+          </div>
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>{matchLongDate(m.date)}{matchTimeLabel(m) ? ' · ' + matchTimeLabel(m) : ''} · {m.place}</div>
         </div>
         <div style={{ display: 'flex', gap: 10, padding: '14px 16px 14px', position: 'relative' }}>

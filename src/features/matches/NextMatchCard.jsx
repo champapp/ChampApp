@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CC, Icon, matchLongDate, daysUntil } from '../../ui';
+import { CC, Icon, RivalCrest, matchLongDate, daysUntil } from '../../ui';
 import { psMatchTimes, m17MatchTimes } from '../../lib/domain';
 
 function Row({ icon, label, value, accent }) {
@@ -88,7 +88,10 @@ export function NextMatchCard({ match: m, player, collapsible = false }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
           <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' }}>{m.home ? 'Local vs' : 'Visitante vs'}</span>
         </div>
-        <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 30, color: '#fff', lineHeight: 1, marginTop: 2 }}>{m.rival}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
+          <RivalCrest rival={m.rival} size={34} style={{ borderRadius: 9, background: '#fff', padding: 3 }} />
+          <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 30, color: '#fff', lineHeight: 1 }}>{m.rival}</div>
+        </div>
         <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 5 }}>{m.comp} · {player.cat}{player.sub ? ' ' + player.sub : ''}</div>
       </div>
       {/* detalle */}
