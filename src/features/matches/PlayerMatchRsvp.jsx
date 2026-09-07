@@ -1,7 +1,7 @@
 import { CC, Card, Icon, RivalCrest, matchLongDate } from '../../ui';
 import { nextMatch, isSurveyActive } from '../../lib/domain';
 import { useMatches, useRsvp } from '../../lib/queries';
-import { rivalCrestSrc } from '../../lib/rivalCrests';
+import { rivalCrestSrc, CHAMPAGNAT_CREST } from '../../lib/rivalCrests';
 import { RsvpChip } from './RsvpChip';
 
 // Respuesta de RSVP de un jugador al próximo partido (vista admin, en su perfil).
@@ -19,9 +19,20 @@ export function PlayerMatchRsvp({ player }) {
   return (
     <Card pad={14} style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 38, height: 38, borderRadius: 10, background: rivalCrestSrc(m.rival) ? '#fff' : 'rgba(14,58,92,0.06)', border: rivalCrestSrc(m.rival) ? `1px solid ${CC.line}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {rivalCrestSrc(m.rival) ? <RivalCrest rival={m.rival} size={28} /> : <Icon name="versus" size={20} color={CC.navy} sw={2.2} />}
-        </div>
+        {rivalCrestSrc(m.rival) ? (
+          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+            <div style={{ width: 33, height: 33, borderRadius: 9, background: '#fff', border: `1px solid ${CC.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src={CHAMPAGNAT_CREST} alt="Champagnat" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+            </div>
+            <div style={{ width: 33, height: 33, borderRadius: 9, background: '#fff', border: `1px solid ${CC.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <RivalCrest rival={m.rival} size={26} />
+            </div>
+          </div>
+        ) : (
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(14,58,92,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="versus" size={20} color={CC.navy} sw={2.2} />
+          </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase' }}>Encuesta · {m.home ? 'vs' : '@'} {m.rival}</div>
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.faint, marginTop: 1 }}>{matchLongDate(m.date)}{active ? '' : ' · encuesta no abierta'}</div>

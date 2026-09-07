@@ -1,7 +1,10 @@
-// Escudos de los rivales del Top 12 uruguayo (más Champagnat, ya en /assets).
-// El nombre del rival lo carga el admin a mano y no sigue un formato fijo
-// (siglas, typos, encuentros con varios equipos a la vez), así que el
-// reconocimiento es por substring, no por igualdad exacta con el nombre.
+// Escudo propio del club, para mostrar junto al del rival en los "vs".
+export const CHAMPAGNAT_CREST = '/assets/escudo.png';
+
+// Escudos de los rivales del Top 12 uruguayo. El nombre del rival lo carga
+// el admin a mano y no sigue un formato fijo (siglas, typos, encuentros con
+// varios equipos a la vez), así que el reconocimiento es por substring, no
+// por igualdad exacta con el nombre.
 const RIVAL_CRESTS = [
   { tokens: ['obc', 'old boys'], src: '/assets/rivals/old-boys.svg' },
   { tokens: ['occ', 'old christians'], src: '/assets/rivals/old-christians.png' },

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CC, Icon, CatBadge, RivalCrest } from '../../ui';
 import { todayISO, matchRsvpStats, matchTimeLabel, scoreDivsForMatch } from '../../lib/domain';
+import { rivalCrestSrc, CHAMPAGNAT_CREST } from '../../lib/rivalCrests';
 import { usePlayers, useRsvp, useSetMatchScore } from '../../lib/queries';
 
 const MONTH_SHORT = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
@@ -186,7 +187,8 @@ export function MatchCard({ m, onEdit, admin, onRsvp, toast }) {
             <CatBadge id={m.cat} />
             <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4, color: m.home ? CC.good : CC.goldDeep, textTransform: 'uppercase' }}>{m.home ? 'Local' : 'Visitante'}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+            {rivalCrestSrc(m.rival) && <img src={CHAMPAGNAT_CREST} alt="Champagnat" style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 4, flexShrink: 0 }} />}
             <RivalCrest rival={m.rival} size={18} style={{ borderRadius: 4 }} />
             <div style={{ minWidth: 0, fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 19, color: CC.ink, lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>vs {m.rival}</div>
           </div>

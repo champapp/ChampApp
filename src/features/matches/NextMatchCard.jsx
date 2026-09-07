@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CC, Icon, RivalCrest, matchLongDate, daysUntil } from '../../ui';
 import { psMatchTimes, m17MatchTimes } from '../../lib/domain';
+import { rivalCrestSrc, CHAMPAGNAT_CREST } from '../../lib/rivalCrests';
 
 function Row({ icon, label, value, accent }) {
   return (
@@ -88,7 +89,8 @@ export function NextMatchCard({ match: m, player, collapsible = false }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
           <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' }}>{m.home ? 'Local vs' : 'Visitante vs'}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+          {rivalCrestSrc(m.rival) && <img src={CHAMPAGNAT_CREST} alt="Champagnat" style={{ width: 34, height: 34, objectFit: 'contain', borderRadius: 9, background: '#fff', padding: 3, flexShrink: 0 }} />}
           <RivalCrest rival={m.rival} size={34} style={{ borderRadius: 9, background: '#fff', padding: 3 }} />
           <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 30, color: '#fff', lineHeight: 1 }}>{m.rival}</div>
         </div>
