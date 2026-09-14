@@ -179,7 +179,7 @@ export function ShopScreen({ isAdmin, player }) {
       {quickStock && <ShopQuickStock items={items} onClose={() => setQuickStock(false)} toast={showToast} />}
       {builder && <ShopItemEditor item={builder.item} items={items} onClose={() => setBuilder(null)} toast={showToast} />}
       {adminOrders && <AdminOrdersSheet onClose={() => setAdminOrders(false)} toast={showToast} />}
-      {myOrders && player && <MyOrdersSheet player={player} onClose={() => setMyOrders(false)} />}
+      {myOrders && player && <MyOrdersSheet player={player} onClose={() => setMyOrders(false)} toast={showToast} />}
       <Toast msg={toast} />
     </div>
   );

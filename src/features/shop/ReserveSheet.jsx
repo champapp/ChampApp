@@ -26,8 +26,7 @@ export function ReserveSheet({ item, player, onClose, toast }) {
     if (!size) { toast?.('Elegí un talle'); return; }
     if (!contactName.trim()) { toast?.('Ingresá tu nombre de contacto'); return; }
     createRes.mutate({
-      item, playerId: player.id,
-      size, quantity: qty,
+      item, size, quantity: qty,
       contactName: contactName.trim(),
       contactPhone: contactPhone.trim(),
       paymentMethod,

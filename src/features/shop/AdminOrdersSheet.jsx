@@ -128,7 +128,7 @@ export function AdminOrdersSheet({ onClose, toast }) {
   }
 
   function cancel(r) {
-    cancelRes.mutate({ reservation: r, items }, {
+    cancelRes.mutate({ reservationId: r.id }, {
       onSuccess: () => toast?.('Reserva cancelada · stock restaurado'),
       onError: () => toast?.('Error al cancelar'),
     });

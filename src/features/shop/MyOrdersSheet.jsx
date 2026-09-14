@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { CC, Icon, Empty } from '../../ui';
-import { useMyReservations, useShopConfig } from '../../lib/queries';
+import { useMyReservations, useShopConfig, useCancelReservation } from '../../lib/queries';
 
 const STATUS_STYLE = {
   pendiente: { bg: 'rgba(249,178,51,0.15)', color: '#a06a00', label: 'Pendiente' },
@@ -14,12 +15,21 @@ function fmtDate(iso) {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 
-export function MyOrdersSheet({ player, onClose }) {
+export function MyOrdersSheet({ player, onClose, toast }) {
   const resQ = useMyReservations(player?.id);
   const configQ = useShopConfig();
+  const cancelRes = useCancelReservation();
+  const [confirmId, setConfirmId] = useState(null);
 
   const reservations = resQ.data ?? [];
   const config = configQ.data || {};
+
+  function cancel(id) {
+    cancelRes.mutate({ reservationId: id }, {
+      onSuccess: () => { setConfirmId(null); toast?.('Reserva cancelada'); },
+      onError: () => toast?.('No se pudo cancelar la reserva'),
+    });
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 340, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
@@ -69,6 +79,7 @@ export function MyOrdersSheet({ player, onClose }) {
             const st = STATUS_STYLE[r.status] || STATUS_STYLE.pendiente;
             const itemName = r.shop_items?.name || 'Producto';
             const photo = (r.shop_items?.photos || [])[0];
+            const confirming = confirmId === r.id;
             return (
               <div key={r.id} style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: `1px solid ${CC.line}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderBottom: `1px solid ${CC.line}`, background: CC.paper }}>
@@ -95,6 +106,25 @@ export function MyOrdersSheet({ player, onClose }) {
                     </div>
                   )}
                 </div>
+                {r.status === 'pendiente' && (
+                  <div style={{ padding: '0 14px 12px' }}>
+                    {confirming ? (
+                      <div style={{ background: 'rgba(224,82,78,0.07)', border: `1px solid ${CC.bad}`, borderRadius: 10, padding: '9px 10px' }}>
+                        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.ink, marginBottom: 8 }}>¿Cancelar esta reserva? Se libera el stock reservado.</div>
+                        <div style={{ display: 'flex', gap: 7 }}>
+                          <button onClick={() => setConfirmId(null)} style={{ flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy, padding: '7px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>Volver</button>
+                          <button onClick={() => cancel(r.id)} disabled={cancelRes.isPending} style={{ flex: 1, border: 'none', background: CC.bad, color: '#fff', padding: '7px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>
+                            {cancelRes.isPending ? 'Cancelando…' : 'Sí, cancelar'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setConfirmId(r.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: `1px solid ${CC.bad}`, background: 'rgba(224,82,78,0.06)', color: CC.bad, padding: '6px 11px', borderRadius: 9, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>
+                        <Icon name="x" size={12} color={CC.bad} sw={2.5} />Cancelar reserva
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

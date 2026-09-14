@@ -1081,20 +1081,18 @@ export function useMyReservations(playerId) {
   });
 }
 
+// Reserva y descuenta el stock en una sola transacción del lado del servidor
+// (función `reserve_shop_item`) — evita que dos jugadores se lleven la
+// última unidad a la vez y no depende de que el cliente pueda escribir
+// `shop_items` directo (no puede: esa tabla es de escritura solo-admin).
 export function useCreateReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ item, playerId, size, quantity, contactName, contactPhone, paymentMethod, notes }) => {
-      // Descontar stock al momento de reservar
-      const sizes = (item.sizes || []).map((s) =>
-        s.size === size ? { ...s, stock: Math.max(0, (s.stock || 0) - quantity) } : s
-      );
-      const { error: stockErr } = await supabase.from('shop_items').update({ sizes }).eq('id', item.id);
-      if (stockErr) throw stockErr;
-      const { error } = await supabase.from('reservations').insert({
-        item_id: item.id, player_id: playerId, size, quantity,
-        contact_name: contactName, contact_phone: contactPhone,
-        payment_method: paymentMethod, notes: notes || null,
+    mutationFn: async ({ item, size, quantity, contactName, contactPhone, paymentMethod, notes }) => {
+      const { error } = await supabase.rpc('reserve_shop_item', {
+        p_item_id: item.id, p_size: size, p_quantity: quantity,
+        p_contact_name: contactName, p_contact_phone: contactPhone,
+        p_payment_method: paymentMethod, p_notes: notes || null,
       });
       if (error) throw error;
     },
@@ -1140,22 +1138,15 @@ export function useDeliverReservation() {
   });
 }
 
-// Cancela una reserva y restaura el stock descontado al momento de reservar.
+// Cancela una reserva y repone el stock descontado al reservar, en una sola
+// transacción del servidor (función `cancel_shop_reservation`). La usa tanto
+// el jugador (solo sobre su propia reserva pendiente) como el admin (sobre
+// pendientes o pagadas) — la función valida el permiso puertas adentro.
 export function useCancelReservation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ reservation, items }) => {
-      const item = items.find((it) => it.id === reservation.item_id);
-      if (item) {
-        const sizes = (item.sizes || []).map((s) =>
-          s.size === reservation.size
-            ? { ...s, stock: (s.stock || 0) + reservation.quantity }
-            : s
-        );
-        const { error: stockErr } = await supabase.from('shop_items').update({ sizes }).eq('id', item.id);
-        if (stockErr) throw stockErr;
-      }
-      const { error } = await supabase.from('reservations').update({ status: 'cancelado' }).eq('id', reservation.id);
+    mutationFn: async ({ reservationId }) => {
+      const { error } = await supabase.rpc('cancel_shop_reservation', { p_reservation_id: reservationId });
       if (error) throw error;
     },
     onSuccess: () => {

@@ -250,6 +250,166 @@ create table if not exists public.shop_sales (
 );
 create index if not exists shop_sales_item_idx on public.shop_sales (item_id);
 
+-- Champa Shop: reservas de un jugador sobre un producto/talle. El stock se
+-- descuenta/repone con las funciones reserve_shop_item / cancel_shop_reservation
+-- (mas abajo), nunca escribiendo `shop_items.sizes` directo desde el cliente.
+create table if not exists public.reservations (
+  id              bigint generated always as identity primary key,
+  item_id         bigint not null references public.shop_items(id) on delete cascade,
+  player_id       bigint not null references public.players(id) on delete cascade,
+  size            text not null,
+  quantity        int not null default 1,
+  contact_name    text,
+  contact_phone   text,
+  payment_method  text,
+  notes           text,
+  status          text not null default 'pendiente' check (status in ('pendiente','pagado','entregado','cancelado')),
+  created_at      timestamptz not null default now()
+);
+create index if not exists reservations_item_idx on public.reservations (item_id);
+create index if not exists reservations_player_idx on public.reservations (player_id);
+
+-- Champa Shop: datos de pago/retiro que ve el jugador al reservar (fila unica, id=1)
+create table if not exists public.shop_config (
+  id            int primary key default 1,
+  payment_info  text,
+  pickup_info   text,
+  check (id = 1)
+);
+
+-- Reserva un talle de un producto para el jugador autenticado: valida stock,
+-- lo descuenta y crea la reserva, todo en una sola transaccion (evita que dos
+-- jugadores se lleven la ultima unidad a la vez). `sizes` puede tener mas de
+-- una fila con el mismo talle (carga manual del admin) - se descuenta en
+-- orden hasta cubrir la cantidad pedida.
+create or replace function public.reserve_shop_item(
+  p_item_id bigint,
+  p_size text,
+  p_quantity int,
+  p_contact_name text,
+  p_contact_phone text,
+  p_payment_method text,
+  p_notes text default null
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_player_id bigint;
+  v_sizes jsonb;
+  v_available int;
+  v_remaining int;
+  v_new_sizes jsonb := '[]'::jsonb;
+  v_elem jsonb;
+  v_elem_stock int;
+  v_take int;
+  v_reservation_id bigint;
+  i int;
+begin
+  v_player_id := public.current_player_id();
+  if v_player_id is null then
+    raise exception 'No autenticado como jugador';
+  end if;
+  if p_quantity is null or p_quantity < 1 then
+    raise exception 'Cantidad invalida';
+  end if;
+
+  select sizes into v_sizes from public.shop_items where id = p_item_id for update;
+  if v_sizes is null then
+    raise exception 'Producto no encontrado';
+  end if;
+
+  select coalesce(sum((elem->>'stock')::int), 0) into v_available
+  from jsonb_array_elements(v_sizes) elem
+  where elem->>'size' = p_size;
+
+  if v_available < p_quantity then
+    raise exception 'Sin stock suficiente';
+  end if;
+
+  v_remaining := p_quantity;
+  for i in 0 .. jsonb_array_length(v_sizes) - 1 loop
+    v_elem := v_sizes -> i;
+    if v_remaining > 0 and (v_elem->>'size') = p_size then
+      v_elem_stock := coalesce((v_elem->>'stock')::int, 0);
+      v_take := least(v_elem_stock, v_remaining);
+      v_elem := jsonb_set(v_elem, '{stock}', to_jsonb(v_elem_stock - v_take));
+      v_remaining := v_remaining - v_take;
+    end if;
+    v_new_sizes := v_new_sizes || jsonb_build_array(v_elem);
+  end loop;
+
+  update public.shop_items set sizes = v_new_sizes where id = p_item_id;
+
+  insert into public.reservations
+    (item_id, player_id, size, quantity, contact_name, contact_phone, payment_method, notes, status)
+  values
+    (p_item_id, v_player_id, p_size, p_quantity, p_contact_name, p_contact_phone, p_payment_method, p_notes, 'pendiente')
+  returning id into v_reservation_id;
+
+  return v_reservation_id;
+end;
+$$;
+grant execute on function public.reserve_shop_item(bigint, text, int, text, text, text, text) to authenticated;
+
+-- Cancela una reserva y repone el stock descontado al reservar, todo en una
+-- sola transaccion. El jugador solo puede cancelar su propia reserva
+-- mientras siga "pendiente" (si ya pago, que hable con el admin para el
+-- reembolso); el admin puede cancelar pendientes o pagadas.
+create or replace function public.cancel_shop_reservation(p_reservation_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_player_id bigint;
+  v_res record;
+  v_sizes jsonb;
+  v_new_sizes jsonb := '[]'::jsonb;
+  v_elem jsonb;
+  v_done boolean := false;
+  i int;
+begin
+  v_player_id := public.current_player_id();
+
+  select * into v_res from public.reservations where id = p_reservation_id for update;
+  if v_res is null then
+    raise exception 'Reserva no encontrada';
+  end if;
+
+  if v_res.player_id = v_player_id then
+    if v_res.status <> 'pendiente' then
+      raise exception 'Solo se puede cancelar una reserva pendiente';
+    end if;
+  elsif public.is_admin() then
+    if v_res.status not in ('pendiente', 'pagado') then
+      raise exception 'Esta reserva no se puede cancelar';
+    end if;
+  else
+    raise exception 'No autorizado';
+  end if;
+
+  select sizes into v_sizes from public.shop_items where id = v_res.item_id for update;
+  if v_sizes is not null then
+    for i in 0 .. jsonb_array_length(v_sizes) - 1 loop
+      v_elem := v_sizes -> i;
+      if not v_done and (v_elem->>'size') = v_res.size then
+        v_elem := jsonb_set(v_elem, '{stock}', to_jsonb(coalesce((v_elem->>'stock')::int, 0) + v_res.quantity));
+        v_done := true;
+      end if;
+      v_new_sizes := v_new_sizes || jsonb_build_array(v_elem);
+    end loop;
+    update public.shop_items set sizes = v_new_sizes where id = v_res.item_id;
+  end if;
+
+  update public.reservations set status = 'cancelado' where id = p_reservation_id;
+end;
+$$;
+grant execute on function public.cancel_shop_reservation(bigint) to authenticated;
+
 -- Rutinas de gimnasio. blocks = [{title, exercises:[{section,name,aprox,detail,rest}]}]
 -- week_start: lunes de la semana a la que corresponde la rutina, usado para
 -- que las estadisticas de asistencia al gym cuenten cada rutina en su mes
