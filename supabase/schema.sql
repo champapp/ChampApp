@@ -436,16 +436,25 @@ create table if not exists public.routines (
 --   $$);
 
 -- Check de rutina del jugador (= asistencia al gimnasio). Maximo 1 por dia.
+-- routine_id es "on delete set null": borrar una rutina vieja NO debe borrar
+-- la asistencia historica que se marco con ella, solo desvincularla.
 create table if not exists public.gym_checks (
   id          bigint generated always as identity primary key,
   player_id   bigint not null references public.players(id) on delete cascade,
-  routine_id  bigint references public.routines(id) on delete cascade,
+  routine_id  bigint references public.routines(id) on delete set null,
   block       int,
   date        date not null default current_date,
   created_at  timestamptz not null default now()
 );
 create unique index if not exists gym_checks_unique_idx on public.gym_checks (player_id, date);
 create index if not exists gym_checks_player_idx on public.gym_checks (player_id);
+
+-- migracion: la constraint original era "on delete cascade" (borrar una
+-- rutina borraba en cascada la asistencia de TODOS los jugadores que la
+-- tenian marcada). Se cambia a "on delete set null".
+alter table public.gym_checks drop constraint if exists gym_checks_routine_id_fkey;
+alter table public.gym_checks add constraint gym_checks_routine_id_fkey
+  foreign key (routine_id) references public.routines(id) on delete set null;
 
 -- Agenda de fisioterapia (lunes y miercoles)
 create table if not exists public.fisio_bookings (

@@ -7,19 +7,35 @@ import { RoutineImport } from './RoutineImport';
 
 function byWeekStart(a, b) { return (a.week_start || '').localeCompare(b.week_start || ''); }
 
-function RoutineRow({ r, onEdit, onToggleArchive, onDelete }) {
+function RoutineRow({ r, onEdit, onToggleArchive, onDelete, deleting }) {
   const cs = routineCats(r);
+  const [confirm, setConfirm] = useState(false);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${CC.line}`, borderRadius: 12, padding: '10px 12px', background: r.archived ? CC.paper : '#fff' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color: CC.ink, letterSpacing: 0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
-        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: CC.muted }}>
-          {r.week_start ? 'Semana del ' + fmtDate(r.week_start) + ' · ' : ''}{cs.includes('all') ? 'Todo el club' : cs.join(' · ')} · {(r.blocks || []).length} bloques
+    <div style={{ border: `1px solid ${CC.line}`, borderRadius: 12, background: r.archived ? CC.paper : '#fff', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, color: CC.ink, letterSpacing: 0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+          <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: CC.muted }}>
+            {r.week_start ? 'Semana del ' + fmtDate(r.week_start) + ' · ' : ''}{cs.includes('all') ? 'Todo el club' : cs.join(' · ')} · {(r.blocks || []).length} bloques
+          </div>
         </div>
+        <button onClick={() => onToggleArchive(r)} title={r.archived ? 'Desarchivar' : 'Archivar'} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${CC.line}`, background: r.archived ? 'rgba(249,178,51,0.15)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="archive" size={14} color={r.archived ? CC.goldDeep : CC.navy} sw={2.3} /></button>
+        <button onClick={() => onEdit(r)} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${CC.line}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="edit" size={14} color={CC.navy} sw={2.3} /></button>
+        <button onClick={() => setConfirm(true)} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${CC.line}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} color={CC.bad} sw={2.5} /></button>
       </div>
-      <button onClick={() => onToggleArchive(r)} title={r.archived ? 'Desarchivar' : 'Archivar'} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${CC.line}`, background: r.archived ? 'rgba(249,178,51,0.15)' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="archive" size={14} color={r.archived ? CC.goldDeep : CC.navy} sw={2.3} /></button>
-      <button onClick={() => onEdit(r)} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${CC.line}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="edit" size={14} color={CC.navy} sw={2.3} /></button>
-      <button onClick={() => onDelete(r.id)} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${CC.line}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} color={CC.bad} sw={2.5} /></button>
+      {confirm && (
+        <div style={{ padding: '0 12px 10px' }}>
+          <div style={{ background: 'rgba(224,82,78,0.07)', border: `1px solid ${CC.bad}`, borderRadius: 10, padding: '9px 10px' }}>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.ink, marginBottom: 8 }}>¿Eliminar "{r.title}"? No se puede deshacer.</div>
+            <div style={{ display: 'flex', gap: 7 }}>
+              <button onClick={() => setConfirm(false)} style={{ flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy, padding: '7px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>Cancelar</button>
+              <button onClick={() => onDelete(r.id)} disabled={deleting} style={{ flex: 1, border: 'none', background: CC.bad, color: '#fff', padding: '7px', borderRadius: 8, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13 }}>
+                {deleting ? 'Eliminando…' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -71,7 +87,7 @@ export function AdminRoutines({ toast }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {list.map((r) => (
-              <RoutineRow key={r.id} r={r} onEdit={(rt) => setBuilding({ initial: rt })} onToggleArchive={toggleArchive} onDelete={del} />
+              <RoutineRow key={r.id} r={r} onEdit={(rt) => setBuilding({ initial: rt })} onToggleArchive={toggleArchive} onDelete={del} deleting={deleteRoutine.isPending} />
             ))}
           </div>
           {archived.length > 0 && (
@@ -82,7 +98,7 @@ export function AdminRoutines({ toast }) {
               {showArchived && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                   {archived.map((r) => (
-                    <RoutineRow key={r.id} r={r} onEdit={(rt) => setBuilding({ initial: rt })} onToggleArchive={toggleArchive} onDelete={del} />
+                    <RoutineRow key={r.id} r={r} onEdit={(rt) => setBuilding({ initial: rt })} onToggleArchive={toggleArchive} onDelete={del} deleting={deleteRoutine.isPending} />
                   ))}
                 </div>
               )}

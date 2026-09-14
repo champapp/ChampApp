@@ -587,7 +587,8 @@ export function useUpsertRoutine() {
   });
 }
 
-// Elimina una rutina (admin) — sus checks de gimnasio caen en cascada.
+// Elimina una rutina (admin). La asistencia de gimnasio ya marcada con esta
+// rutina (gym_checks) no se borra, solo queda sin rutina asociada.
 export function useDeleteRoutine() {
   const queryClient = useQueryClient();
   return useMutation({
