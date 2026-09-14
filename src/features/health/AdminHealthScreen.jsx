@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Toast, fmtDate } from '../../ui';
-import { injuryStatus, injuredPlayers, protocolsForInjury, catById, trainingTypeLabel, trainingTypeShortLabel, trainingTypeColor } from '../../lib/domain';
-import { usePlayers, useActiveInjuries, useInjuryProtocols } from '../../lib/queries';
+import { injuryStatus, injuredPlayers, protocolsForInjury, feedbackForInjury, catById, trainingTypeLabel, trainingTypeShortLabel, trainingTypeColor } from '../../lib/domain';
+import { usePlayers, useActiveInjuries, useInjuryProtocols, useInjuryFeedback } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { ProtocolItem } from '../../components/player/ProtocolItem';
 import { FisioAgenda } from './FisioAgenda';
@@ -11,10 +11,11 @@ import { InjuryStats } from './InjuryStats';
 
 // Fila de un jugador lesionado: diagnóstico, retorno y protocolos (lectura),
 // con acceso al tratamiento completo.
-function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
+function SanidadRow({ player, injury, protocols, feedback = [], onTreat, onOpenPlayer }) {
   const st = injuryStatus(injury);
   const [exp, setExp] = useState(false);
   if (!st) return null;
+  const hasFeedback = feedback.length > 0;
   const red = st.color === 'red';
   const col = red ? CC.bad : CC.gold;
   const training = trainingTypeLabel(injury?.training_type);
@@ -28,7 +29,14 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
       <button onClick={() => setExp((v) => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '10px 11px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
         <Avatar name={player.name} photo={player.photo_url} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 15, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 15, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</span>
+            {hasFeedback && (
+              <span title={`${feedback.length} mensaje${feedback.length > 1 ? 's' : ''} del jugador`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 19, height: 19, borderRadius: '50%', background: CC.gold, flexShrink: 0 }}>
+                <Icon name="bell" size={10.5} color={CC.navy900} sw={2.6} />
+              </span>
+            )}
+          </div>
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{st.reason || 'Lesión sin diagnóstico cargado'}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
@@ -66,6 +74,21 @@ function SanidadRow({ player, injury, protocols, onTreat, onOpenPlayer }) {
             )}
           </div>
 
+          {hasFeedback && (
+            <button onClick={() => onTreat(player, injury)} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, width: '100%', textAlign: 'left', border: `1px solid ${CC.gold}`, background: 'rgba(249,178,51,0.14)', borderRadius: 11, padding: '9px 11px', marginTop: 11, cursor: 'pointer' }}>
+              <Icon name="bell" size={15} color={CC.goldDeep} sw={2.3} style={{ marginTop: 1, flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, color: CC.navy900, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                  {feedback.length} mensaje{feedback.length > 1 ? 's' : ''} del jugador
+                </div>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.ink, marginTop: 2, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  "{feedback[0].text}"
+                </div>
+              </div>
+              <Icon name="chevron" size={14} color={CC.goldDeep} sw={2.4} style={{ flexShrink: 0, marginTop: 3 }} />
+            </button>
+          )}
+
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase', margin: '13px 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="medkit" size={13} color={CC.muted} sw={2.3} />Protocolos de recuperación
           </div>
@@ -99,16 +122,18 @@ export function AdminHealthScreen({ onOpenPlayer }) {
   const playersQ = usePlayers();
   const injuriesQ = useActiveInjuries();
   const protocolsQ = useInjuryProtocols();
+  const feedbackQ = useInjuryFeedback();
   const [treat, setTreat] = useState(null); // { player, injury }
   const [picking, setPicking] = useState(false);
   const [open, setOpen] = useState(true);
 
-  if (playersQ.isLoading || injuriesQ.isLoading || protocolsQ.isLoading) {
+  if (playersQ.isLoading || injuriesQ.isLoading || protocolsQ.isLoading || feedbackQ.isLoading) {
     return <div style={{ padding: '40px 16px', textAlign: 'center', fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>;
   }
 
   const players = playersQ.data ?? [];
   const allProtocols = protocolsQ.data ?? [];
+  const allFeedback = feedbackQ.data ?? [];
   const injuryByPlayer = new Map((injuriesQ.data ?? []).map((i) => [i.player_id, i]));
   const injured = injuredPlayers({ players, injuryByPlayer });
   const n = injured.length;
@@ -162,7 +187,12 @@ export function AdminHealthScreen({ onOpenPlayer }) {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {g.list.map((p) => (
-                          <SanidadRow key={p.id} player={p} injury={injuryByPlayer.get(p.id)} protocols={protocolsForInjury(allProtocols, injuryByPlayer.get(p.id)?.id)} onTreat={openTreatment} onOpenPlayer={onOpenPlayer} />
+                          <SanidadRow
+                            key={p.id} player={p} injury={injuryByPlayer.get(p.id)}
+                            protocols={protocolsForInjury(allProtocols, injuryByPlayer.get(p.id)?.id)}
+                            feedback={feedbackForInjury(allFeedback, injuryByPlayer.get(p.id)?.id)}
+                            onTreat={openTreatment} onOpenPlayer={onOpenPlayer}
+                          />
                         ))}
                       </div>
                     </div>
