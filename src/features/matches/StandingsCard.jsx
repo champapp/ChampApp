@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { CC, Icon, Chip, fmtDate } from '../../ui';
-import { standingsForCat, standingsWithMovement } from '../../lib/domain';
+import { CATS, standingsWithMovement } from '../../lib/domain';
 import { teamCrestSrc, isChampagnatTeam } from '../../lib/rivalCrests';
 import { useStandingsTables } from '../../lib/queries';
+
+const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const CAT_ORDER = CATS.map((c) => c.id);
+
+function shortMatchDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return `${SHORT_DAYS[day]} ${d}/${m}`;
+}
 
 function MovementTag({ movement }) {
   if (!movement) return <span style={{ width: 26, display: 'inline-block' }} />;
@@ -34,21 +43,39 @@ function StandingsRow({ row }) {
   );
 }
 
-// Tabla de posiciones de la categoría del jugador (o de una específica si se
-// pasa `cat`). Si hay más de una división para esa categoría (ej. PS:
-// Primera / Intermedia / Pre-Intermedia) deja elegir cuál ver. No renderiza
-// nada si no hay ninguna tabla cargada para esa categoría.
-export function StandingsCard({ cat, pad = true }) {
+// Tabla de posiciones. Muestra TODAS las tablas cargadas (de cualquier
+// categoría), no solo la del jugador — arranca mostrando la propia si existe
+// y deja elegir cualquier otra desde los chips. Si hay más de una división
+// para una misma categoría (ej. PS: Primera / Intermedia / Pre-Intermedia) se
+// listan igual, una al lado de la otra. `nextMatch` (opcional) es el próximo
+// partido del jugador y se muestra como referencia arriba de la tabla. No
+// renderiza nada si todavía no hay ninguna tabla cargada.
+export function StandingsCard({ cat, nextMatch, pad = true }) {
   const tablesQ = useStandingsTables();
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState(null);
 
   if (tablesQ.isLoading) return null;
-  const tables = standingsForCat(tablesQ.data ?? [], cat);
-  if (!tables.length) return null;
+  const all = tablesQ.data ?? [];
+  if (!all.length) return null;
+
+  // la/s tabla/s de la categoría del jugador primero, después el resto en el
+  // orden habitual de categorías del club
+  const tables = [...all].sort((a, b) => {
+    if (a.cat === cat && b.cat !== cat) return -1;
+    if (b.cat === cat && a.cat !== cat) return 1;
+    const ai = CAT_ORDER.indexOf(a.cat), bi = CAT_ORDER.indexOf(b.cat);
+    if (ai !== bi) return ai - bi;
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.label.localeCompare(b.label);
+  });
 
   const active = tables.find((t) => t.id === activeId) || tables[0];
   const rows = standingsWithMovement(active);
+  const multiCat = new Set(tables.map((t) => t.cat)).size > 1;
+  const chipLabel = (t) => (multiCat ? `${t.cat} · ${t.label}` : t.label);
+  const summary = multiCat
+    ? [...new Set(tables.map((t) => t.cat))].join(' · ')
+    : tables.length > 1 ? tables.map((t) => t.label).join(' · ') : active.label;
 
   const cardStyle = {
     marginBottom: 16, borderRadius: 20, overflow: 'hidden',
@@ -75,13 +102,21 @@ export function StandingsCard({ cat, pad = true }) {
 
   return (
     <div style={{ padding: pad ? '16px 16px 0' : 0 }}>
+    {nextMatch && (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '0 2px 8px' }}>
+        <Icon name="calendar" size={13} color={CC.muted} sw={2.3} />
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, letterSpacing: 0.2, color: CC.muted, textTransform: 'uppercase' }}>
+          Próxima fecha · {shortMatchDate(nextMatch.date)} · {nextMatch.home ? 'vs' : '@'} {nextMatch.rival}
+        </span>
+      </div>
+    )}
     <div style={cardStyle}>
       <div style={{ position: 'absolute', right: -22, top: -22, pointerEvents: 'none' }}><Icon name="trophy" size={120} color="rgba(14,58,92,0.12)" sw={1.6} /></div>
       {header}
       {!open && (
         <div style={{ borderTop: '1px solid rgba(14,58,92,0.15)', padding: '10px 16px 13px', position: 'relative' }}>
           <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 14, color: 'rgba(14,58,92,0.75)', letterSpacing: 0.2 }}>
-            {tables.length > 1 ? tables.map((t) => t.label).join(' · ') : active.label}
+            {summary}
           </span>
         </div>
       )}
@@ -90,7 +125,7 @@ export function StandingsCard({ cat, pad = true }) {
         <div style={{ borderTop: '1px solid rgba(14,58,92,0.15)', padding: '12px 16px 14px', position: 'relative' }}>
           {tables.length > 1 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              {tables.map((t) => <Chip key={t.id} active={t.id === active.id} onClick={() => setActiveId(t.id)}>{t.label}</Chip>)}
+              {tables.map((t) => <Chip key={t.id} active={t.id === active.id} onClick={() => setActiveId(t.id)}>{chipLabel(t)}</Chip>)}
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

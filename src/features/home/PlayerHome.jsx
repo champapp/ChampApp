@@ -83,7 +83,7 @@ export function PlayerHome() {
         </div>
       )}
       <DocExpiryBanner docs={adminDocsQ.data} cat={player.cat} />
-      <StandingsCard cat={player.cat} />
+      <StandingsCard cat={player.cat} nextMatch={d.nextMatch} />
       <PlayerFisioCard playerId={player.id} bookings={fisioQ.data ?? []} toast={showToast} />
       <PlayerLineups me={player} />
       {d.nextMatch && (
