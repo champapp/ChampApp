@@ -45,12 +45,13 @@ function StandingsRow({ row }) {
 }
 
 // Tabla de posiciones. Muestra TODAS las tablas cargadas (de cualquier
-// categoría), no solo la del jugador — arranca mostrando la propia si existe
-// y deja elegir cualquier otra desde los chips. Si hay más de una división
-// para una misma categoría (ej. PS: Primera / Intermedia / Pre-Intermedia) se
-// listan igual, una al lado de la otra. `nextMatch` (opcional) es el próximo
-// partido del jugador y se muestra como referencia arriba de la tabla. No
-// renderiza nada si todavía no hay ninguna tabla cargada.
+// categoría), no solo la del jugador, con los chips siempre en el mismo
+// orden (Primera-Intermedia-Pre-Intermedia-M19-M17-...). Por defecto arranca
+// mostrando la tabla de la categoría del jugador; si no tiene ninguna
+// cargada, arranca en la primera de la lista (Primera de PS). `nextMatch`
+// (opcional) es el próximo partido del jugador y se muestra como referencia
+// arriba de la tabla. No renderiza nada si todavía no hay ninguna tabla
+// cargada.
 export function StandingsCard({ cat, nextMatch, pad = true }) {
   const tablesQ = useStandingsTables();
   const [open, setOpen] = useState(false);
@@ -60,17 +61,18 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
   const all = tablesQ.data ?? [];
   if (!all.length) return null;
 
-  // la/s tabla/s de la categoría del jugador primero, después el resto en el
-  // orden habitual de categorías del club
+  // orden fijo de chips (Primera-Intermedia-Pre-Intermedia-M19-M17-...), sin
+  // importar la categoría del jugador
   const tables = [...all].sort((a, b) => {
-    if (a.cat === cat && b.cat !== cat) return -1;
-    if (b.cat === cat && a.cat !== cat) return 1;
     const ai = CAT_ORDER.indexOf(a.cat), bi = CAT_ORDER.indexOf(b.cat);
     if (ai !== bi) return ai - bi;
     return (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.label.localeCompare(b.label);
   });
 
-  const active = tables.find((t) => t.id === activeId) || tables[0];
+  // por defecto se muestra la tabla de la categoría del jugador; si no tiene
+  // ninguna cargada, la primera de la lista (Primera de PS)
+  const defaultActive = tables.find((t) => t.cat === cat) || tables[0];
+  const active = tables.find((t) => t.id === activeId) || defaultActive;
   const rows = standingsWithMovement(active);
   const multiCat = new Set(tables.map((t) => t.cat)).size > 1;
   // etiqueta corta para el chip: si la categoría tiene varias divisiones (ej.
