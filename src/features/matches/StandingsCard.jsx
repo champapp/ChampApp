@@ -6,6 +6,7 @@ import { useStandingsTables } from '../../lib/queries';
 
 const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const CAT_ORDER = CATS.map((c) => c.id);
+const SHORT_DIVISION = { 'Primera': 'PRI', 'Intermedia': 'INTER', 'Pre-Intermedia': 'PRE' };
 
 function shortMatchDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -72,7 +73,14 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
   const active = tables.find((t) => t.id === activeId) || tables[0];
   const rows = standingsWithMovement(active);
   const multiCat = new Set(tables.map((t) => t.cat)).size > 1;
-  const chipLabel = (t) => (multiCat ? `${t.cat} · ${t.label}` : t.label);
+  // etiqueta corta para el chip: si la categoría tiene varias divisiones (ej.
+  // PS) alcanza con la división (PRI/INTER/PRE); si tiene una sola, con la
+  // categoría (M19)
+  const chipLabel = (t) => {
+    const sameCat = tables.filter((x) => x.cat === t.cat);
+    if (sameCat.length > 1) return SHORT_DIVISION[t.label] || t.label.slice(0, 4).toUpperCase();
+    return t.cat;
+  };
   const summary = multiCat
     ? [...new Set(tables.map((t) => t.cat))].join(' · ')
     : tables.length > 1 ? tables.map((t) => t.label).join(' · ') : active.label;
