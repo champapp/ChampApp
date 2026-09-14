@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CC, Icon, Card, Chip, fmtDate } from '../../ui';
+import { CC, Icon, Chip, fmtDate } from '../../ui';
 import { standingsForCat, standingsWithMovement } from '../../lib/domain';
 import { teamCrestSrc, isChampagnatTeam } from '../../lib/rivalCrests';
 import { useStandingsTables } from '../../lib/queries';
@@ -18,15 +18,17 @@ function StandingsRow({ row }) {
   const crest = teamCrestSrc(row.team);
   const own = isChampagnatTeam(row.team);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 9, background: own ? 'rgba(249,178,51,0.14)' : 'transparent' }}>
-      <span style={{ width: 16, flexShrink: 0, textAlign: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, color: CC.muted }}>{row.position}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 9, background: own ? 'rgba(14,58,92,0.12)' : 'transparent' }}>
+      <span style={{ width: 16, flexShrink: 0, textAlign: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, color: CC.navy700 }}>{row.position}</span>
       {crest ? (
-        <img src={crest} alt={row.team} style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4, flexShrink: 0 }} />
+        <span style={{ width: 20, height: 20, borderRadius: 5, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 2, boxSizing: 'border-box' }}>
+          <img src={crest} alt={row.team} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </span>
       ) : (
         <span style={{ width: 20, flexShrink: 0 }} />
       )}
-      <span style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: own ? 700 : 600, fontSize: 13, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.team}</span>
-      <span style={{ minWidth: 22, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14, color: CC.navy }}>{row.pts}</span>
+      <span style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: own ? 700 : 600, fontSize: 13, color: CC.navy900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.team}</span>
+      <span style={{ minWidth: 22, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14, color: CC.navy900 }}>{row.pts}</span>
       <MovementTag movement={row.movement} />
     </div>
   );
@@ -48,36 +50,55 @@ export function StandingsCard({ cat, pad = true }) {
   const active = tables.find((t) => t.id === activeId) || tables[0];
   const rows = standingsWithMovement(active);
 
+  const cardStyle = {
+    marginBottom: 16, borderRadius: 20, overflow: 'hidden',
+    background: `linear-gradient(155deg, ${CC.gold} 0%, ${CC.goldDeep} 100%)`,
+    boxShadow: '0 10px 28px rgba(230,148,18,0.28)', position: 'relative',
+  };
+
+  const header = (
+    <button onClick={() => setOpen((v) => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '13px 16px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+        <Icon name="trophy" size={16} color={CC.navy} sw={2.2} />
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 1, color: CC.navy, textTransform: 'uppercase' }}>Tabla de posiciones</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+        {active.updated_at && (
+          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, letterSpacing: 0.3, color: CC.gold, background: CC.navy, padding: '3px 10px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+            Act. {fmtDate(active.updated_at.slice(0, 10))}
+          </span>
+        )}
+        <Icon name={open ? 'chevUp' : 'chevron'} size={16} color="rgba(14,58,92,0.5)" sw={2.3} />
+      </div>
+    </button>
+  );
+
   return (
     <div style={{ padding: pad ? '16px 16px 0' : 0 }}>
-    <Card pad={0} style={{ marginBottom: 16, overflow: 'hidden' }}>
-      <button onClick={() => setOpen((v) => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}>
-        <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(14,58,92,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon name="trophy" size={19} color={CC.navy} sw={2.1} />
+    <div style={cardStyle}>
+      <div style={{ position: 'absolute', right: -22, top: -22, pointerEvents: 'none' }}><Icon name="trophy" size={120} color="rgba(14,58,92,0.12)" sw={1.6} /></div>
+      {header}
+      {!open && (
+        <div style={{ borderTop: '1px solid rgba(14,58,92,0.15)', padding: '10px 16px 13px', position: 'relative' }}>
+          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: 14, color: 'rgba(14,58,92,0.75)', letterSpacing: 0.2 }}>
+            {tables.length > 1 ? tables.map((t) => t.label).join(' · ') : active.label}
+          </span>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.ink, letterSpacing: 0.3, textTransform: 'uppercase', lineHeight: 1 }}>Tabla de posiciones</div>
-          <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted, marginTop: 3 }}>{tables.length > 1 ? tables.map((t) => t.label).join(' · ') : active.label}</div>
-        </div>
-        <Icon name={open ? 'chevUp' : 'chevron'} size={18} color={CC.faint} sw={2.3} />
-      </button>
+      )}
 
       {open && (
-        <div style={{ padding: '0 10px 12px' }}>
+        <div style={{ borderTop: '1px solid rgba(14,58,92,0.15)', padding: '12px 16px 14px', position: 'relative' }}>
           {tables.length > 1 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '0 2px', marginBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {tables.map((t) => <Chip key={t.id} active={t.id === active.id} onClick={() => setActiveId(t.id)}>{t.label}</Chip>)}
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {rows.map((r) => <StandingsRow key={r.team} row={r} />)}
           </div>
-          {active.updated_at && (
-            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: CC.faint, marginTop: 8, padding: '0 2px' }}>Actualizada {fmtDate(active.updated_at.slice(0, 10))}</div>
-          )}
         </div>
       )}
-    </Card>
+    </div>
     </div>
   );
 }
