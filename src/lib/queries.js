@@ -205,6 +205,35 @@ export function useDeleteInjury() {
   });
 }
 
+// Feedback de los jugadores sobre cómo se vienen sintiendo en su lesión.
+export function useInjuryFeedback() {
+  return useQuery({ queryKey: ['injury_feedback'], queryFn: () => selectAll('injury_feedback') });
+}
+
+// El jugador deja feedback corto en su propia lesión activa.
+export function useAddInjuryFeedback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ injuryId, playerId, text }) => {
+      const { error } = await supabase.from('injury_feedback').insert({ injury_id: injuryId, player_id: playerId, text });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['injury_feedback'] }),
+  });
+}
+
+// Borra un feedback (el propio jugador, o el admin si hace falta moderarlo).
+export function useDeleteInjuryFeedback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('injury_feedback').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['injury_feedback'] }),
+  });
+}
+
 // Turnos de fisioterapia (todos), para la agenda admin/jugador.
 export function useFisioBookings() {
   return useQuery({ queryKey: ['fisio_bookings'], queryFn: () => selectAll('fisio_bookings') });
@@ -974,6 +1003,49 @@ export function useUploadMessageFile() {
       const { data } = supabase.storage.from('message-files').getPublicUrl(path);
       return { url: data.publicUrl, name: file.name, type: file.type || 'application/octet-stream' };
     },
+  });
+}
+
+// ── Tablas de posiciones ──────────────────────────────────────────────
+
+export function useStandingsTables() {
+  return useQuery({ queryKey: ['standings_tables'], queryFn: () => selectAll('standings_tables') });
+}
+
+// Crea o actualiza una tabla de posiciones (admin). Al guardar, las filas
+// vigentes pasan a `prev_rows` (snapshot para calcular las flechas de
+// movimiento) y `rows` pasa a ser el nuevo orden.
+export function useUpsertStandingsTable() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, cat, label, sortOrder, rows }) => {
+      if (id) {
+        const { data: current, error: curErr } = await supabase.from('standings_tables').select('rows').eq('id', id).single();
+        if (curErr) throw curErr;
+        const { error } = await supabase.from('standings_tables')
+          .update({ cat, label, sort_order: sortOrder, rows, prev_rows: current.rows })
+          .eq('id', id);
+        if (error) throw error;
+        return id;
+      }
+      const { data, error } = await supabase.from('standings_tables')
+        .insert({ cat, label, sort_order: sortOrder, rows })
+        .select('id').single();
+      if (error) throw error;
+      return data.id;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['standings_tables'] }),
+  });
+}
+
+export function useDeleteStandingsTable() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('standings_tables').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['standings_tables'] }),
   });
 }
 

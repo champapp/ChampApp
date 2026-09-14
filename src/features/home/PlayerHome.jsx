@@ -17,6 +17,7 @@ import { PlayerFisioCard } from '../../components/player/PlayerFisioCard';
 import { DocExpiryBanner } from '../../components/player/DocExpiryBanner';
 import { FeedBoard } from '../../components/feed/FeedBoard';
 import { RsvpSurveyCard } from '../matches/RsvpSurveyCard';
+import { StandingsCard } from '../matches/StandingsCard';
 import { PlayerLineups } from '../matches/lineups/PlayerLineups';
 import { NextMatchCard } from '../matches/NextMatchCard';
 import { EditPlayerSheet } from '../players/EditPlayerSheet';
@@ -78,10 +79,11 @@ export function PlayerHome() {
       <ShopOrderBanner playerId={player?.id} />
       {injury && (
         <div style={{ padding: '16px 16px 0' }}>
-          <InjuryCard injury={injury} protocols={protocols} />
+          <InjuryCard injury={injury} protocols={protocols} toast={showToast} />
         </div>
       )}
       <DocExpiryBanner docs={adminDocsQ.data} cat={player.cat} />
+      <StandingsCard cat={player.cat} />
       <PlayerFisioCard playerId={player.id} bookings={fisioQ.data ?? []} toast={showToast} />
       <PlayerLineups me={player} />
       {d.nextMatch && (

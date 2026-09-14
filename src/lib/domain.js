@@ -501,6 +501,41 @@ export function protocolsForInjury(protocols, injuryId) {
     .sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.id - a.id);
 }
 
+// feedback del jugador sobre una lesión (cómo se viene sintiendo), del más
+// reciente al más antiguo
+export function feedbackForInjury(feedback, injuryId) {
+  return (feedback || [])
+    .filter((f) => f.injury_id === injuryId)
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+}
+
+// ── Tablas de posiciones ───────────────────────────────────────
+
+// tablas de posiciones de una categoría, ordenadas para mostrar (ej. PS:
+// Primera, Intermedia, Pre-Intermedia)
+export function standingsForCat(tables, cat) {
+  return (tables || [])
+    .filter((t) => t.cat === cat)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.label.localeCompare(b.label));
+}
+
+// arma la tabla con posición y movimiento (subió/bajó/nuevo) respecto al
+// snapshot anterior (prev_rows), comparando por nombre de equipo
+export function standingsWithMovement(table) {
+  const rows = table?.rows || [];
+  const prevRows = table?.prev_rows || [];
+  const prevPos = new Map(prevRows.map((r, i) => [r.team, i]));
+  return rows.map((r, i) => {
+    const prevIdx = prevPos.get(r.team);
+    return {
+      ...r,
+      position: i + 1,
+      movement: prevIdx == null ? 0 : prevIdx - i,
+      isNew: prevIdx == null,
+    };
+  });
+}
+
 // ── Documentación administrativa ───────────────────────────
 
 // Qué documentos se exigen según categoría: los menores de M7 a M13 solo

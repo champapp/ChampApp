@@ -31,7 +31,7 @@ export function PlayerHealthScreen() {
 
       {injury && (
         <div style={{ marginBottom: 16 }}>
-          <InjuryCard injury={injury} protocols={protocols} />
+          <InjuryCard injury={injury} protocols={protocols} toast={showToast} />
         </div>
       )}
 

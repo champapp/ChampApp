@@ -91,6 +91,18 @@ create table if not exists public.injury_protocols (
 );
 create index if not exists injury_protocols_injury_idx on public.injury_protocols (injury_id);
 
+-- Feedback corto del jugador sobre como se viene sintiendo durante el
+-- tratamiento de una lesion activa (texto libre, max 60 caracteres en el
+-- formulario). Lo ve el equipo de sanidad en el tratamiento de esa lesion.
+create table if not exists public.injury_feedback (
+  id          bigint generated always as identity primary key,
+  injury_id   bigint not null references public.injuries(id) on delete cascade,
+  player_id   bigint not null references public.players(id) on delete cascade,
+  text        text not null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists injury_feedback_injury_idx on public.injury_feedback (injury_id);
+
 -- Documentacion administrativa obligatoria por jugador (con vencimiento)
 create table if not exists public.admin_docs (
   id          bigint generated always as identity primary key,
@@ -164,6 +176,24 @@ alter table public.matches add column if not exists time_preintermedia text;
 alter table public.matches add column if not exists cite_primera text;
 alter table public.matches add column if not exists cite_intermedia text;
 alter table public.matches add column if not exists cite_preintermedia text;
+
+-- Tabla de posiciones (datos, no imagen): una fila por division/pool de
+-- una categoria (ej. PS puede tener "Top 12", "Intermedia" y
+-- "Pre-Intermedia" a la vez). `rows` es el orden actual de posiciones,
+-- `prev_rows` el snapshot anterior (para calcular las flechas de
+-- movimiento al mostrarla) — se pisa cada vez que el admin guarda una
+-- actualizacion nueva. Formato de cada fila en el jsonb:
+-- {team, pj, pg, pe, pp, bo, bd, pts}
+create table if not exists public.standings_tables (
+  id          bigint generated always as identity primary key,
+  cat         text not null,
+  label       text not null,
+  sort_order  int not null default 0,
+  rows        jsonb not null default '[]'::jsonb,
+  prev_rows   jsonb,
+  updated_at  timestamptz not null default now()
+);
+create index if not exists standings_tables_cat_idx on public.standings_tables (cat);
 
 -- Encuesta de disponibilidad (RSVP) por partido y jugador
 create table if not exists public.rsvp (
@@ -431,7 +461,7 @@ declare
   admin_write_tables text[] := array[
     'player_photos', 'gym_marks', 'injuries', 'injury_protocols',
     'practices', 'attendance', 'matches', 'lineups', 'messages',
-    'routines', 'shop_items', 'shop_sales'
+    'routines', 'shop_items', 'shop_sales', 'standings_tables'
   ];
 begin
   foreach t in array admin_write_tables loop
@@ -483,6 +513,24 @@ create policy rsvp_update_own_or_admin on public.rsvp
 drop policy if exists rsvp_delete_admin on public.rsvp;
 create policy rsvp_delete_admin on public.rsvp
   for delete to authenticated using (public.is_admin());
+
+-- ---- injury_feedback: el jugador escribe solo en su propia lesion ----
+alter table public.injury_feedback enable row level security;
+
+drop policy if exists injury_feedback_select on public.injury_feedback;
+create policy injury_feedback_select on public.injury_feedback
+  for select to authenticated using (player_id = public.current_player_id() or public.is_admin());
+
+drop policy if exists injury_feedback_insert_own on public.injury_feedback;
+create policy injury_feedback_insert_own on public.injury_feedback
+  for insert to authenticated with check (
+    player_id = public.current_player_id()
+    and exists (select 1 from public.injuries i where i.id = injury_id and i.player_id = public.current_player_id())
+  );
+
+drop policy if exists injury_feedback_delete on public.injury_feedback;
+create policy injury_feedback_delete on public.injury_feedback
+  for delete to authenticated using (player_id = public.current_player_id() or public.is_admin());
 
 -- ---- gym_checks: el jugador marca su propia asistencia al gym ----
 alter table public.gym_checks enable row level security;

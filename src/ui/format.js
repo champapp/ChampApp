@@ -18,6 +18,14 @@ export const fmtDate = (iso) => {
   return parseInt(d, 10) + ' ' + (MONTH_SHORT[parseInt(m, 10) - 1] || m);
 };
 
+// 'DD Mmm HH:MM', a partir de un timestamptz ISO completo
+export const fmtDateTime = (iso) => {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return fmtDate(iso.slice(0, 10)) + ' ' + hh + ':' + mm;
+};
+
 // 'Lunes 12 de junio'
 export const matchLongDate = (iso) => {
   const d = new Date(iso + 'T00:00:00');

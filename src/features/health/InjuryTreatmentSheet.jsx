@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { CC, Icon, Field, TextInput, SelectInput } from '../../ui';
-import { todayISO, TRAINING_TYPES } from '../../lib/domain';
-import { useSetInjury, useCloseInjury, useAddInjuryProtocol, useDeleteInjuryProtocol } from '../../lib/queries';
+import { CC, Icon, Field, TextInput, SelectInput, fmtDateTime } from '../../ui';
+import { todayISO, TRAINING_TYPES, feedbackForInjury } from '../../lib/domain';
+import { useSetInjury, useCloseInjury, useAddInjuryProtocol, useDeleteInjuryProtocol, useInjuryFeedback } from '../../lib/queries';
 import { ProtocolItem } from '../../components/player/ProtocolItem';
 
 // Tratamiento (admin): carga/edita diagnóstico y retorno de una lesión, y
@@ -17,6 +17,8 @@ export function InjuryTreatmentSheet({ player, injury, protocols = [], onClose, 
   const closeInjuryMutation = useCloseInjury();
   const addProtocolMutation = useAddInjuryProtocol();
   const deleteProtocolMutation = useDeleteInjuryProtocol();
+  const feedbackQ = useInjuryFeedback();
+  const feedback = injury ? feedbackForInjury(feedbackQ.data, injury.id) : [];
 
   function save() {
     if (!ret) { toast && toast('Indicá la fecha de retorno a la cancha'); return; }
@@ -97,6 +99,22 @@ export function InjuryTreatmentSheet({ player, injury, protocols = [], onClose, 
                   <Icon name="plus" size={16} color="#fff" sw={2.6} />Agregar
                 </button>
               </div>
+
+              {feedback.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: CC.muted, textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="chat" size={13} color={CC.muted} sw={2.3} />Feedback del jugador
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {feedback.map((f) => (
+                      <div key={f.id} style={{ background: '#fff', border: `1px solid ${CC.line}`, borderRadius: 10, padding: '8px 10px' }}>
+                        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.ink, lineHeight: 1.3 }}>{f.text}</div>
+                        <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, color: CC.faint, marginTop: 2 }}>{fmtDateTime(f.created_at)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, background: 'rgba(14,58,92,0.04)', borderRadius: 11, padding: '10px 12px' }}>

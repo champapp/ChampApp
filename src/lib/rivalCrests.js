@@ -8,12 +8,13 @@ const RIVAL_CRESTS = [
   { tokens: ['trebol'], src: '/assets/rivals/trebol.jpg' },
   { tokens: ['carrasco polo', 'cpc'], src: '/assets/rivals/carrasco-polo.svg' },
   { tokens: ['los cuervos', 'cuervos', 'cuevos', 'cgu'], src: '/assets/rivals/los-cuervos.jpg' },
-  { tokens: ['mvcc', 'montevideo cricket'], src: '/assets/rivals/mvcc.jpg' },
+  { tokens: ['mvcc', 'montevideo cricket', 'mvd cricket'], src: '/assets/rivals/mvcc.jpg' },
   { tokens: ['seminario'], src: '/assets/rivals/seminario.png' },
   { tokens: ['psg'], src: '/assets/rivals/psg.png' },
   { tokens: ['lobos'], src: '/assets/rivals/lobos.png' },
   { tokens: ['ceibos'], src: '/assets/rivals/ceibos.jpg' },
   { tokens: ['ctm', 'circulo de tenis'], src: '/assets/rivals/ctm.png' },
+  { tokens: ['lions'], src: '/assets/rivals/lions.svg' },
 ];
 
 const ACCENTS = { á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ñ: 'n' };
@@ -29,4 +30,18 @@ export function rivalCrestSrc(rivalName) {
   if (!norm) return null;
   const team = RIVAL_CRESTS.find((t) => t.tokens.some((tok) => norm.includes(tok)));
   return team ? team.src : null;
+}
+
+// Igual que rivalCrestSrc, pero reconoce también a Champagnat — para usar
+// en contextos donde el propio club aparece como un equipo más (ej. tablas
+// de posiciones), a diferencia de "vs {rival}" donde no corresponde.
+export function isChampagnatTeam(teamName) {
+  const norm = normalize(teamName);
+  return norm.includes('champagnat') || norm.includes('champa');
+}
+
+export function teamCrestSrc(teamName) {
+  if (!normalize(teamName)) return null;
+  if (isChampagnatTeam(teamName)) return '/assets/escudo.png';
+  return rivalCrestSrc(teamName);
 }

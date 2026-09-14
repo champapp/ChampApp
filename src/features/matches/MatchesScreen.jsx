@@ -7,6 +7,7 @@ import { MatchCard } from './MatchCard';
 import { MatchEditSheet } from './MatchEditSheet';
 import { MatchRsvpSheet } from './MatchRsvpSheet';
 import { AdminLineups } from './lineups/AdminLineups';
+import { StandingsAdmin } from './StandingsAdmin';
 
 // Pestaña "Partidos" del admin: lista, crea, edita y elimina partidos por categoría.
 export function MatchesScreen() {
@@ -39,6 +40,7 @@ export function MatchesScreen() {
       </div>
 
       <AdminLineups toast={showToast} />
+      {catId !== 'all' && <StandingsAdmin cat={catId} toast={showToast} />}
 
       {upcoming.length > 0 && <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase', margin: '2px 0 9px' }}>Próximos</div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
