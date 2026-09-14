@@ -8,6 +8,7 @@ import { AdminDashboard } from './AdminDashboard';
 import { SanidadShortcut } from './SanidadShortcut';
 import { DocsExpiringCard } from './DocsExpiringCard';
 import { PlayerProfileScreen } from '../players/PlayerProfileScreen';
+import { StandingsCard } from '../matches/StandingsCard';
 
 function HomeLoading() {
   return (
@@ -48,6 +49,7 @@ export function AdminHome({ onGoToHealth }) {
       <AdminMessages toast={showToast} />
       <SanidadShortcut count={injuredPlayers({ players, injuryByPlayer }).length} onOpen={onGoToHealth} />
       <DocsExpiringCard rows={adminDocAlertsByPlayer({ players, docs: docsQ.data ?? [] })} onOpenPlayer={setOpenId} />
+      <StandingsCard pad={false} />
       <AdminDashboard
         players={players}
         practices={practicesQ.data ?? []}
