@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CC, Icon, Card, Avatar, SectionTitle, Toast, fmtDate } from '../../ui';
-import { injuryStatus, injuredPlayers, protocolsForInjury, feedbackForInjury, catById, trainingTypeLabel, trainingTypeShortLabel, trainingTypeColor } from '../../lib/domain';
-import { usePlayers, useActiveInjuries, useInjuryProtocols, useInjuryFeedback } from '../../lib/queries';
+import { injuryStatus, injuredPlayers, protocolsForInjury, feedbackForInjury, unseenFeedback, catById, trainingTypeLabel, trainingTypeShortLabel, trainingTypeColor } from '../../lib/domain';
+import { usePlayers, useActiveInjuries, useInjuryProtocols, useInjuryFeedback, useMarkFeedbackSeen } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { ProtocolItem } from '../../components/player/ProtocolItem';
 import { FisioAgenda } from './FisioAgenda';
@@ -15,7 +15,8 @@ function SanidadRow({ player, injury, protocols, feedback = [], onTreat, onOpenP
   const st = injuryStatus(injury);
   const [exp, setExp] = useState(false);
   if (!st) return null;
-  const hasFeedback = feedback.length > 0;
+  const unseen = unseenFeedback(feedback, injury);
+  const hasFeedback = unseen.length > 0;
   const red = st.color === 'red';
   const col = red ? CC.bad : CC.gold;
   const training = trainingTypeLabel(injury?.training_type);
@@ -32,7 +33,7 @@ function SanidadRow({ player, injury, protocols, feedback = [], onTreat, onOpenP
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 15, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</span>
             {hasFeedback && (
-              <span title={`${feedback.length} mensaje${feedback.length > 1 ? 's' : ''} del jugador`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 19, height: 19, borderRadius: '50%', background: CC.gold, flexShrink: 0 }}>
+              <span title={`${unseen.length} mensaje${unseen.length > 1 ? 's' : ''} nuevo${unseen.length > 1 ? 's' : ''} del jugador`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 19, height: 19, borderRadius: '50%', background: CC.gold, flexShrink: 0 }}>
                 <Icon name="bell" size={10.5} color={CC.navy900} sw={2.6} />
               </span>
             )}
@@ -79,10 +80,10 @@ function SanidadRow({ player, injury, protocols, feedback = [], onTreat, onOpenP
               <Icon name="bell" size={15} color={CC.goldDeep} sw={2.3} style={{ marginTop: 1, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, color: CC.navy900, textTransform: 'uppercase', letterSpacing: 0.3 }}>
-                  {feedback.length} mensaje{feedback.length > 1 ? 's' : ''} del jugador
+                  {unseen.length} mensaje{unseen.length > 1 ? 's' : ''} nuevo{unseen.length > 1 ? 's' : ''} del jugador
                 </div>
                 <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12.5, color: CC.ink, marginTop: 2, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  "{feedback[0].text}"
+                  "{unseen[0].text}"
                 </div>
               </div>
               <Icon name="chevron" size={14} color={CC.goldDeep} sw={2.4} style={{ flexShrink: 0, marginTop: 3 }} />
@@ -123,6 +124,7 @@ export function AdminHealthScreen({ onOpenPlayer }) {
   const injuriesQ = useActiveInjuries();
   const protocolsQ = useInjuryProtocols();
   const feedbackQ = useInjuryFeedback();
+  const markFeedbackSeen = useMarkFeedbackSeen();
   const [treat, setTreat] = useState(null); // { player, injury }
   const [picking, setPicking] = useState(false);
   const [open, setOpen] = useState(true);
@@ -146,7 +148,11 @@ export function AdminHealthScreen({ onOpenPlayer }) {
   });
 
   function openTreatment(player, injury) {
-    setTreat({ player, injury: injury || injuryByPlayer.get(player.id) || null });
+    const inj = injury || injuryByPlayer.get(player.id) || null;
+    setTreat({ player, injury: inj });
+    if (inj && feedbackForInjury(allFeedback, inj.id).length > 0) {
+      markFeedbackSeen.mutate(inj.id);
+    }
   }
 
   return (

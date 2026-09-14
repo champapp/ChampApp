@@ -509,6 +509,13 @@ export function feedbackForInjury(feedback, injuryId) {
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
 }
 
+// feedback de una lesión que el admin todavía no vio (más nuevo que
+// injury.feedback_seen_at) — si nunca lo vio, es todo el feedback.
+export function unseenFeedback(feedback, injury) {
+  const seenAt = injury?.feedback_seen_at;
+  return (feedback || []).filter((f) => !seenAt || (f.created_at || '') > seenAt);
+}
+
 // ── Tablas de posiciones ───────────────────────────────────────
 
 // tablas de posiciones de una categoría, ordenadas para mostrar (ej. PS:

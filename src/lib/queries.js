@@ -165,6 +165,19 @@ export function useCloseInjury() {
   });
 }
 
+// Marca como visto el feedback del jugador en una lesión (admin, al abrir
+// Tratamiento) — apaga la campana de aviso hasta que llegue un mensaje nuevo.
+export function useMarkFeedbackSeen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (injuryId) => {
+      const { error } = await supabase.from('injuries').update({ feedback_seen_at: new Date().toISOString() }).eq('id', injuryId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['injuries'] }),
+  });
+}
+
 // Agrega un protocolo de recuperación a una lesión (admin).
 export function useAddInjuryProtocol() {
   const queryClient = useQueryClient();

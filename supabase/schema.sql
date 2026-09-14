@@ -70,16 +70,22 @@ create index if not exists gym_marks_player_idx on public.gym_marks (player_id);
 -- training_type: que tipo de entrenamiento puede hacer el jugador mientras
 -- dura la recuperacion (ver TRAINING_TYPES en src/lib/domain.js).
 create table if not exists public.injuries (
-  id            bigint generated always as identity primary key,
-  player_id     bigint not null references public.players(id) on delete cascade,
-  reason        text,
-  since         date,
-  return_date   date,
-  training_type text,
-  closed_at     timestamptz,
-  created_at    timestamptz not null default now()
+  id                bigint generated always as identity primary key,
+  player_id         bigint not null references public.players(id) on delete cascade,
+  reason            text,
+  since             date,
+  return_date       date,
+  training_type     text,
+  closed_at         timestamptz,
+  -- ultima vez que el admin abrio "Tratamiento" y vio el feedback del
+  -- jugador; el feedback mas nuevo que esta fecha muestra la campana en Sanidad
+  feedback_seen_at  timestamptz,
+  created_at        timestamptz not null default now()
 );
 create index if not exists injuries_player_idx on public.injuries (player_id);
+
+-- migracion: agrega feedback_seen_at si la tabla ya existia sin esa columna
+alter table public.injuries add column if not exists feedback_seen_at timestamptz;
 
 -- Protocolos de recuperacion cargados por fisioterapia
 create table if not exists public.injury_protocols (
