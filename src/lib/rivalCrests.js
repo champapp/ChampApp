@@ -15,6 +15,7 @@ const RIVAL_CRESTS = [
   { tokens: ['ceibos'], src: '/assets/rivals/ceibos.jpg' },
   { tokens: ['ctm', 'circulo de tenis'], src: '/assets/rivals/ctm.png' },
   { tokens: ['lions'], src: '/assets/rivals/lions.svg' },
+  { tokens: ['monte vi'], src: '/assets/rivals/monte-vi.svg' },
 ];
 
 const ACCENTS = { á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ñ: 'n' };
