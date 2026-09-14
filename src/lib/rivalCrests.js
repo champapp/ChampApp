@@ -16,6 +16,10 @@ const RIVAL_CRESTS = [
   { tokens: ['ctm', 'circulo de tenis'], src: '/assets/rivals/ctm.png' },
   { tokens: ['lions'], src: '/assets/rivals/lions.svg' },
   { tokens: ['monte vi'], src: '/assets/rivals/monte-vi.svg' },
+  { tokens: ['remeros'], src: '/assets/rivals/remeros.svg' },
+  { tokens: ['jubilar'], src: '/assets/rivals/jubilar.svg' },
+  { tokens: ['la olla'], src: '/assets/rivals/la-olla.svg' },
+  { tokens: ['british'], src: '/assets/rivals/british.svg' },
 ];
 
 const ACCENTS = { á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ñ: 'n' };

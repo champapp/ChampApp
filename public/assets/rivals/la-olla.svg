@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect x="0" y="0" width="100" height="100" fill="#FFFFFF"/>
+  <!-- hoja / cinta superior -->
+  <path d="M8 32 C30 14 70 14 92 30 C92 34 90 36 88 36 C68 24 32 24 12 36 C9 35 8 34 8 32 Z" fill="#1B1F8C"/>
+  <!-- olla (forma en U) -->
+  <path d="M10 36 C6 42 5 50 8 60 C12 74 24 84 34 84 C24 80 16 68 16 56 C16 48 19 42 24 38 C20 36 15 36 10 36 Z" fill="#1F6B3A"/>
+  <!-- montaña -->
+  <path d="M92 36 C93 46 90 58 82 68 C74 78 60 84 46 84 C58 80 68 70 74 58 L66 50 L72 42 L78 48 C82 44 88 40 92 36 Z" fill="#1F6B3A"/>
+</svg>
