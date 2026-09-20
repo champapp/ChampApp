@@ -80,7 +80,12 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
   // categoría (M19)
   const chipLabel = (t) => {
     const sameCat = tables.filter((x) => x.cat === t.cat);
-    if (sameCat.length > 1) return SHORT_DIVISION[t.label] || t.label.slice(0, 4).toUpperCase();
+    if (sameCat.length > 1) {
+      if (SHORT_DIVISION[t.label]) return SHORT_DIVISION[t.label];
+      const serie = t.label.match(/serie\s*([a-z0-9]+)/i);
+      if (serie) return `SERIE ${serie[1].toUpperCase()}`;
+      return t.label.slice(0, 4).toUpperCase();
+    }
     return t.cat;
   };
   const summary = multiCat
