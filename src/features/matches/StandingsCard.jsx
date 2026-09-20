@@ -12,6 +12,12 @@ const SHORT_DIVISION = { 'Primera': 'PRI', 'Intermedia': 'INTER', 'Pre-Intermedi
 // un chip por serie
 const SERIE_RE = /^\s*serie\s+([a-z0-9]+)\s*-\s*(.+)$/i;
 
+// tablas ya definidas/ganadas por el club, donde se muestra el trofeo al
+// lado del nombre de Champagnat (a mano, no se infiere de la posición)
+function isChampionTable(label) {
+  return /copa de plata/i.test(label || '');
+}
+
 function shortMatchDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   const day = new Date(y, m - 1, d).getDay();
@@ -28,7 +34,7 @@ function MovementTag({ movement }) {
   );
 }
 
-function StandingsRow({ row }) {
+function StandingsRow({ row, champion }) {
   const crest = teamCrestSrc(row.team);
   const own = isChampagnatTeam(row.team);
   return (
@@ -41,7 +47,10 @@ function StandingsRow({ row }) {
       ) : (
         <span style={{ width: 20, flexShrink: 0 }} />
       )}
-      <span style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: own ? 700 : 600, fontSize: 13, color: CC.navy900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.team}</span>
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'Barlow, sans-serif', fontWeight: own ? 700 : 600, fontSize: 13, color: CC.navy900 }}>
+        <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.team}</span>
+        {own && champion && <span style={{ flexShrink: 0 }} title="Campeón">🏆</span>}
+      </span>
       <span style={{ minWidth: 22, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 14, color: CC.navy900 }}>{row.pts}</span>
       <MovementTag movement={row.movement} />
     </div>
@@ -99,15 +108,16 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
   const active = items.find((it) => it.id === activeId) || defaultActive;
   const activeUpdatedAt = active.tables.reduce((m, t) => (t.updated_at && (!m || t.updated_at > m) ? t.updated_at : m), null);
   const multiCat = new Set(tables.map((t) => t.cat)).size > 1;
-  // etiqueta corta para el chip: si la categoría tiene varias divisiones (ej.
-  // PS) alcanza con la división (PRI/INTER/PRE); si tiene una sola, con la
-  // categoría (M19); un grupo de series usa el nombre del torneo
+  // etiqueta corta para el chip: si la categoría tiene varias divisiones con
+  // nombre fijo (ej. PS: Primera/Intermedia/Pre-Intermedia) alcanza con la
+  // división (PRI/INTER/PRE); el resto (ej. M19 con varios torneos) lleva el
+  // prefijo de categoría, "M19 - <torneo>"
   const chipLabel = (it) => {
     const sameCat = items.filter((x) => x.cat === it.cat);
     if (sameCat.length <= 1) return it.cat;
-    if (it.kind === 'group') return it.label.replace(new RegExp(`^${it.cat}\\s+`, 'i'), '').toUpperCase();
     if (SHORT_DIVISION[it.label]) return SHORT_DIVISION[it.label];
-    return it.label.length <= 14 ? it.label.toUpperCase() : it.label.slice(0, 4).toUpperCase();
+    const name = it.kind === 'group' ? it.label.replace(new RegExp(`^${it.cat}\\s+`, 'i'), '') : it.label;
+    return `${it.cat} - ${name}`.toUpperCase();
   };
   const summary = multiCat
     ? [...new Set(tables.map((t) => t.cat))].join(' · ')
@@ -166,7 +176,7 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
           )}
           {active.kind === 'single' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {standingsWithMovement(active.tables[0]).map((r) => <StandingsRow key={r.team} row={r} />)}
+              {standingsWithMovement(active.tables[0]).map((r) => <StandingsRow key={r.team} row={r} champion={isChampionTable(active.tables[0].label)} />)}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -176,7 +186,7 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
                     {t.label.match(SERIE_RE)?.[1] ? `Serie ${t.label.match(SERIE_RE)[1].toUpperCase()}` : t.label}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {standingsWithMovement(t).map((r) => <StandingsRow key={r.team} row={r} />)}
+                    {standingsWithMovement(t).map((r) => <StandingsRow key={r.team} row={r} champion={isChampionTable(t.label)} />)}
                   </div>
                 </div>
               ))}
