@@ -33,6 +33,7 @@ export function ShopScreen({ isAdmin, player }) {
   const [catF, setCatF] = useState('all');
   const [adminOrders, setAdminOrders] = useState(false);
   const [myOrders, setMyOrders] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   if (itemsQ.isLoading) {
     return <div style={{ padding: '40px 16px', textAlign: 'center', fontFamily: 'Barlow, sans-serif', color: CC.muted }}>Cargando…</div>;
@@ -46,7 +47,13 @@ export function ShopScreen({ isAdmin, player }) {
   const detailItem = items.find((x) => x.id === detailId);
 
   function handleDelete(id) {
-    del.mutate(id, { onSuccess: () => showToast('Producto eliminado') });
+    setConfirmDeleteId(id);
+  }
+  function confirmDelete() {
+    del.mutate(confirmDeleteId, {
+      onSuccess: () => { setConfirmDeleteId(null); showToast('Producto eliminado'); },
+      onError: () => showToast('No se pudo eliminar'),
+    });
   }
   function handleMove(item, dir) {
     const idx = items.indexOf(item);
@@ -180,6 +187,28 @@ export function ShopScreen({ isAdmin, player }) {
       {builder && <ShopItemEditor item={builder.item} items={items} onClose={() => setBuilder(null)} toast={showToast} />}
       {adminOrders && <AdminOrdersSheet onClose={() => setAdminOrders(false)} toast={showToast} />}
       {myOrders && player && <MyOrdersSheet player={player} onClose={() => setMyOrders(false)} toast={showToast} />}
+      {confirmDeleteId != null && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 380, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={() => setConfirmDeleteId(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(7,24,38,0.6)', backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'relative', background: '#fff', borderRadius: 18, padding: '20px 18px', maxWidth: 340, width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(224,82,78,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name="alert" size={19} color={CC.bad} sw={2.2} />
+              </div>
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.ink, textTransform: 'uppercase', letterSpacing: 0.3 }}>Eliminar producto</div>
+            </div>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.muted, lineHeight: 1.4, marginBottom: 16 }}>
+              Se pierde también su historial de ventas y reservas asociado. No se puede deshacer.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setConfirmDeleteId(null)} style={{ flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy, padding: '11px', borderRadius: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15 }}>Cancelar</button>
+              <button onClick={confirmDelete} disabled={del.isPending} style={{ flex: 1, border: 'none', background: CC.bad, color: '#fff', padding: '11px', borderRadius: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15 }}>
+                {del.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Toast msg={toast} />
     </div>
   );

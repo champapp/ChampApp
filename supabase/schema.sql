@@ -247,21 +247,31 @@ create table if not exists public.shop_items (
 );
 
 -- Champa Shop: ventas
+-- item_id es "on delete set null": borrar un producto viejo del catalogo NO
+-- debe borrar el historial de ventas/exportes, solo desvincularlo.
 create table if not exists public.shop_sales (
   id          bigint generated always as identity primary key,
-  item_id     bigint not null references public.shop_items(id) on delete cascade,
+  item_id     bigint references public.shop_items(id) on delete set null,
   size        text,
   qty         int not null default 1,
   date        date not null default current_date
 );
 create index if not exists shop_sales_item_idx on public.shop_sales (item_id);
 
+-- migracion: la constraint original era "not null ... on delete cascade"
+alter table public.shop_sales alter column item_id drop not null;
+alter table public.shop_sales drop constraint if exists shop_sales_item_id_fkey;
+alter table public.shop_sales add constraint shop_sales_item_id_fkey
+  foreign key (item_id) references public.shop_items(id) on delete set null;
+
 -- Champa Shop: reservas de un jugador sobre un producto/talle. El stock se
 -- descuenta/repone con las funciones reserve_shop_item / cancel_shop_reservation
 -- (mas abajo), nunca escribiendo `shop_items.sizes` directo desde el cliente.
+-- item_id es "on delete set null" por el mismo motivo que shop_sales: borrar
+-- un producto no debe borrar el historial de pedidos de los jugadores.
 create table if not exists public.reservations (
   id              bigint generated always as identity primary key,
-  item_id         bigint not null references public.shop_items(id) on delete cascade,
+  item_id         bigint references public.shop_items(id) on delete set null,
   player_id       bigint not null references public.players(id) on delete cascade,
   size            text not null,
   quantity        int not null default 1,
@@ -272,6 +282,12 @@ create table if not exists public.reservations (
   status          text not null default 'pendiente' check (status in ('pendiente','pagado','entregado','cancelado')),
   created_at      timestamptz not null default now()
 );
+
+-- migracion: la constraint original era "not null ... on delete cascade"
+alter table public.reservations alter column item_id drop not null;
+alter table public.reservations drop constraint if exists reservations_item_id_fkey;
+alter table public.reservations add constraint reservations_item_id_fkey
+  foreign key (item_id) references public.shop_items(id) on delete set null;
 create index if not exists reservations_item_idx on public.reservations (item_id);
 create index if not exists reservations_player_idx on public.reservations (player_id);
 
@@ -282,6 +298,21 @@ create table if not exists public.shop_config (
   pickup_info   text,
   check (id = 1)
 );
+
+-- migracion: esta tabla se creo a mano desde el panel de Supabase y quedo con
+-- una politica vieja tipo "Enable read access for all users" (rol "public",
+-- incluye anonimos) que convivia con la del loop admin_write_tables de mas
+-- abajo -en RLS alcanza con que una politica lo permita- dejando el payment
+-- info legible sin login. Se borran todas las politicas existentes antes de
+-- que el loop cree las correctas.
+do $$
+declare
+  pol record;
+begin
+  for pol in select policyname from pg_policies where schemaname = 'public' and tablename = 'shop_config' loop
+    execute format('drop policy %I on public.shop_config', pol.policyname);
+  end loop;
+end $$;
 
 -- Reserva un talle de un producto para el jugador autenticado: valida stock,
 -- lo descuenta y crea la reserva, todo en una sola transaccion (evita que dos
@@ -636,7 +667,7 @@ declare
   admin_write_tables text[] := array[
     'player_photos', 'gym_marks', 'injuries', 'injury_protocols',
     'practices', 'attendance', 'matches', 'lineups', 'messages',
-    'routines', 'shop_items', 'shop_sales', 'standings_tables'
+    'routines', 'shop_items', 'shop_sales', 'standings_tables', 'shop_config'
   ];
 begin
   foreach t in array admin_write_tables loop
