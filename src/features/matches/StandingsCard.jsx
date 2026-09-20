@@ -7,6 +7,10 @@ import { useStandingsTables } from '../../lib/queries';
 const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const CAT_ORDER = CATS.map((c) => c.id);
 const SHORT_DIVISION = { 'Primera': 'PRI', 'Intermedia': 'INTER', 'Pre-Intermedia': 'PRE' };
+// tablas cuyo label es "Serie X - <torneo>" (ej. fase de grupos de una copa)
+// se agrupan en una sola pestaña que despliega las series adentro, en vez de
+// un chip por serie
+const SERIE_RE = /^\s*serie\s+([a-z0-9]+)\s*-\s*(.+)$/i;
 
 function shortMatchDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -69,24 +73,41 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
     return (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.label.localeCompare(b.label);
   });
 
+  // arma la lista de "items" a mostrar como chip: las tablas sueltas quedan
+  // igual, pero varias "Serie X - <torneo>" de la misma categoría y torneo
+  // se agrupan en un solo item con todas sus series adentro
+  const items = [];
+  const groupAt = new Map();
+  for (const t of tables) {
+    const m = t.label.match(SERIE_RE);
+    if (m) {
+      const key = `${t.cat}::${m[2].trim()}`;
+      if (groupAt.has(key)) {
+        items[groupAt.get(key)].tables.push(t);
+      } else {
+        groupAt.set(key, items.length);
+        items.push({ kind: 'group', id: `group:${key}`, cat: t.cat, label: m[2].trim(), tables: [t] });
+      }
+    } else {
+      items.push({ kind: 'single', id: String(t.id), cat: t.cat, label: t.label, tables: [t] });
+    }
+  }
+
   // por defecto se muestra la tabla de la categoría del jugador; si no tiene
   // ninguna cargada, la primera de la lista (Primera de PS)
-  const defaultActive = tables.find((t) => t.cat === cat) || tables[0];
-  const active = tables.find((t) => t.id === activeId) || defaultActive;
-  const rows = standingsWithMovement(active);
+  const defaultActive = items.find((it) => it.cat === cat) || items[0];
+  const active = items.find((it) => it.id === activeId) || defaultActive;
+  const activeUpdatedAt = active.tables.reduce((m, t) => (t.updated_at && (!m || t.updated_at > m) ? t.updated_at : m), null);
   const multiCat = new Set(tables.map((t) => t.cat)).size > 1;
   // etiqueta corta para el chip: si la categoría tiene varias divisiones (ej.
   // PS) alcanza con la división (PRI/INTER/PRE); si tiene una sola, con la
-  // categoría (M19)
-  const chipLabel = (t) => {
-    const sameCat = tables.filter((x) => x.cat === t.cat);
-    if (sameCat.length > 1) {
-      if (SHORT_DIVISION[t.label]) return SHORT_DIVISION[t.label];
-      const serie = t.label.match(/serie\s*([a-z0-9]+)/i);
-      if (serie) return `SERIE ${serie[1].toUpperCase()}`;
-      return t.label.slice(0, 4).toUpperCase();
-    }
-    return t.cat;
+  // categoría (M19); un grupo de series usa el nombre del torneo
+  const chipLabel = (it) => {
+    const sameCat = items.filter((x) => x.cat === it.cat);
+    if (sameCat.length <= 1) return it.cat;
+    if (it.kind === 'group') return it.label.replace(new RegExp(`^${it.cat}\\s+`, 'i'), '').toUpperCase();
+    if (SHORT_DIVISION[it.label]) return SHORT_DIVISION[it.label];
+    return it.label.length <= 14 ? it.label.toUpperCase() : it.label.slice(0, 4).toUpperCase();
   };
   const summary = multiCat
     ? [...new Set(tables.map((t) => t.cat))].join(' · ')
@@ -105,9 +126,9 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
         <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 1, color: CC.navy, textTransform: 'uppercase' }}>Tabla de posiciones</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-        {active.updated_at && (
+        {activeUpdatedAt && (
           <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, letterSpacing: 0.3, color: CC.gold, background: CC.navy, padding: '3px 10px', borderRadius: 999, whiteSpace: 'nowrap' }}>
-            Act. {fmtDate(active.updated_at.slice(0, 10))}
+            Act. {fmtDate(activeUpdatedAt.slice(0, 10))}
           </span>
         )}
         <Icon name={open ? 'chevUp' : 'chevron'} size={16} color="rgba(14,58,92,0.5)" sw={2.3} />
@@ -138,14 +159,29 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
 
       {open && (
         <div style={{ borderTop: '1px solid rgba(14,58,92,0.15)', padding: '12px 16px 14px', position: 'relative' }}>
-          {tables.length > 1 && (
+          {items.length > 1 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              {tables.map((t) => <Chip key={t.id} active={t.id === active.id} onClick={() => setActiveId(t.id)}>{chipLabel(t)}</Chip>)}
+              {items.map((it) => <Chip key={it.id} active={it.id === active.id} onClick={() => setActiveId(it.id)}>{chipLabel(it)}</Chip>)}
             </div>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {rows.map((r) => <StandingsRow key={r.team} row={r} />)}
-          </div>
+          {active.kind === 'single' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {standingsWithMovement(active.tables[0]).map((r) => <StandingsRow key={r.team} row={r} />)}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {active.tables.map((t) => (
+                <div key={t.id}>
+                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, letterSpacing: 0.5, color: 'rgba(14,58,92,0.65)', textTransform: 'uppercase', marginBottom: 4 }}>
+                    {t.label.match(SERIE_RE)?.[1] ? `Serie ${t.label.match(SERIE_RE)[1].toUpperCase()}` : t.label}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {standingsWithMovement(t).map((r) => <StandingsRow key={r.team} row={r} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
