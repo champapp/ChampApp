@@ -5,6 +5,7 @@ import { useFisioBookings, usePlayers, useCancelFisio } from '../../lib/queries'
 import { notifyFisioWaitlist } from '../../lib/push';
 import { InjuryDot } from '../../components/player/InjuryDot';
 import { FisioBookModal } from './FisioBookModal';
+import { FisioAdminBookModal } from './FisioAdminBookModal';
 
 // Agenda de turnos de fisio (lunes y miércoles, 17–20h cada 20').
 // `mode`: 'player' (reservar/cancelar el propio turno) o 'admin' (gestionar
@@ -86,30 +87,33 @@ export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, o
           const b = fisioBookingAt(bookings, date, t);
           const open = expanded === t;
           const pl = b && b.player_id != null ? players.find((p) => p.id === b.player_id) : null;
-          const canOpen = b || mode === 'player';
+          const guestName = b && !pl ? b.guest_name : null;
+          const canBook = mode === 'player' || mode === 'admin';
+          const canOpen = b || canBook;
           return (
             <div key={t} style={{ border: `1.5px solid ${b ? CC.line : 'rgba(14,58,92,0.2)'}`, background: '#fff', borderRadius: 12, overflow: 'hidden' }}>
               <button
-                onClick={() => (b ? setExpanded(open ? null : t) : (mode === 'player' && setBook({ time: t })))}
+                onClick={() => (b ? setExpanded(open ? null : t) : (canBook && setBook({ time: t })))}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, border: 'none', background: 'transparent', padding: '11px 12px', cursor: canOpen ? 'pointer' : 'default', textAlign: 'left' }}
               >
                 <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 18, color: CC.navy, flexShrink: 0, width: 48 }}>{t}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {b ? (
-                    <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{pl ? pl.name : (b.reason || 'Turno reservado')}</span>
+                    <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.ink, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{pl ? pl.name : (guestName || b.reason || 'Turno reservado')}</span>
                   ) : (
                     <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13.5, color: CC.good, letterSpacing: 0.3 }}>LIBRE</span>
                   )}
                 </div>
-                {b ? <Icon name={open ? 'chevUp' : 'chevron'} size={16} color={CC.faint} sw={2.4} /> : (mode === 'player' && <Icon name="plus" size={16} color={CC.navy} sw={2.6} />)}
+                {b ? <Icon name={open ? 'chevUp' : 'chevron'} size={16} color={CC.faint} sw={2.4} /> : (canBook && <Icon name="plus" size={16} color={CC.navy} sw={2.6} />)}
               </button>
               {b && open && (
                 <div style={{ borderTop: `1px solid ${CC.line}`, padding: 12, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <Avatar name={pl ? pl.name : '?'} photo={pl ? pl.photo_url : null} size={52} />
+                  <Avatar name={pl ? pl.name : (guestName || '?')} photo={pl ? pl.photo_url : null} size={52} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, color: CC.ink, letterSpacing: 0.2 }}>{pl ? pl.name : 'Jugador'}</span>
+                      <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 17, color: CC.ink, letterSpacing: 0.2 }}>{pl ? pl.name : (guestName || 'Jugador')}</span>
                       {pl && <InjuryDot injury={injuryByPlayer ? injuryByPlayer.get(pl.id) : null} />}
+                      {!pl && guestName && isAdmin && <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 10.5, fontWeight: 700, color: CC.muted, background: CC.paper, borderRadius: 999, padding: '2px 8px' }}>sin cuenta</span>}
                     </div>
                     {pl && <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted, marginTop: 1 }}>{pl.cat}{pl.sub ? ' ' + pl.sub : ''}{pl.phone ? ' · ' + pl.phone : ''}</div>}
                     <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13, color: CC.ink, marginTop: 7, background: CC.paper, borderRadius: 9, padding: '8px 10px' }}><b style={{ color: CC.muted, fontWeight: 700 }}>Motivo:</b> {b.reason || '—'}</div>
@@ -137,9 +141,9 @@ export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, o
       </div>
 
       {/* lista de espera */}
-      {mode === 'player' && freeCount === 0 && (
+      {(mode === 'player' || isAdmin) && freeCount === 0 && (
         <button onClick={() => setBook({ wait: true })} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: `1.5px solid ${CC.gold}`, background: 'rgba(249,178,51,0.1)', color: CC.goldDeep, padding: 13, borderRadius: 13, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 16, marginBottom: 14 }}>
-          <Icon name="plus" size={16} color={CC.goldDeep} sw={2.6} />Anotarme en lista de espera
+          <Icon name="plus" size={16} color={CC.goldDeep} sw={2.6} />{isAdmin ? 'Anotar en lista de espera' : 'Anotarme en lista de espera'}
         </button>
       )}
       {wl.length > 0 && (
@@ -148,12 +152,14 @@ export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, o
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             {wl.map((b, i) => {
               const pl = b.player_id != null ? players.find((p) => p.id === b.player_id) : null;
+              const wName = pl ? pl.name : (b.guest_name || 'Jugador');
               return (
                 <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${CC.line}`, borderRadius: 11, padding: '9px 12px', background: '#fff' }}>
                   <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(249,178,51,0.18)', color: CC.goldDeep, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{i + 1}</span>
-                  <span style={{ flex: 1, fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 14, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pl ? pl.name : 'Jugador'}</span>
+                  <span style={{ flex: 1, fontFamily: 'Barlow, sans-serif', fontWeight: 600, fontSize: 14, color: CC.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{wName}</span>
                   <span style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, color: CC.faint, whiteSpace: 'nowrap' }}>{b.reason}</span>
                   {!isAdmin && b.player_id === playerId && <button onClick={() => cancelOwn(b.id)} style={{ border: 'none', background: 'transparent', color: CC.bad, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5 }}>Cancelar</button>}
+                  {isAdmin && <button onClick={() => release(b.id)} style={{ border: 'none', background: 'transparent', color: CC.bad, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5 }}>Liberar</button>}
                 </div>
               );
             })}
@@ -161,8 +167,11 @@ export function FisioAgenda({ mode, playerId, injuryByPlayer, onOpenTreatment, o
         </div>
       )}
 
-      {book && (
+      {book && mode === 'player' && (
         <FisioBookModal date={date} time={book.time} waitlist={!!book.wait} playerId={playerId} onClose={() => setBook(null)} toast={toast} />
+      )}
+      {book && mode === 'admin' && (
+        <FisioAdminBookModal date={date} time={book.time} waitlist={!!book.wait} players={players} onClose={() => setBook(null)} toast={toast} />
       )}
     </div>
   );

@@ -497,6 +497,7 @@ alter table public.gym_checks add constraint gym_checks_routine_id_fkey
 create table if not exists public.fisio_bookings (
   id          bigint generated always as identity primary key,
   player_id   bigint references public.players(id) on delete set null,
+  guest_name  text, -- turno cargado por el admin para alguien sin cuenta en la app (player_id null)
   date        date not null,
   time        text,
   reason      text,
@@ -505,6 +506,10 @@ create table if not exists public.fisio_bookings (
 );
 create index if not exists fisio_player_idx on public.fisio_bookings (player_id);
 create index if not exists fisio_date_idx on public.fisio_bookings (date);
+
+-- migracion: columna agregada para permitir reservas de admin a nombre de
+-- alguien sin cuenta en la app
+alter table public.fisio_bookings add column if not exists guest_name text;
 
 -- Roles de usuario: vincula auth.users con su rol y (si es jugador) su fila en players
 create table if not exists public.user_roles (

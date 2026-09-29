@@ -253,19 +253,23 @@ export function useFisioBookings() {
 }
 
 // Reserva un turno de fisio, o se anota en lista de espera si `wait` es true.
+// `guestName` es para cuando el admin carga el turno a nombre de alguien sin
+// cuenta en la app (playerId null); si hay playerId, guestName se ignora.
 export function useBookFisio() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ playerId, date, time, reason, wait }) => {
+    mutationFn: async ({ playerId, guestName, date, time, reason, wait }) => {
+      const guest = playerId ? null : (guestName || null);
       const { error } = await supabase
         .from('fisio_bookings')
-        .insert({ player_id: playerId, date, time: wait ? null : time, reason, wait: !!wait });
+        .insert({ player_id: playerId ?? null, guest_name: guest, date, time: wait ? null : time, reason, wait: !!wait });
       if (error) throw error;
       // Si reservó un turno real (no lista de espera) y ya estaba anotado en
       // la lista de espera de esa fecha, lo sacamos: ya no está esperando.
       if (!wait) {
-        await supabase.from('fisio_bookings').delete()
-          .eq('player_id', playerId).eq('date', date).eq('wait', true);
+        let del = supabase.from('fisio_bookings').delete().eq('date', date).eq('wait', true);
+        del = playerId ? del.eq('player_id', playerId) : del.eq('guest_name', guest);
+        if (playerId || guest) await del;
       }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fisio_bookings'] }),
