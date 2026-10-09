@@ -20,6 +20,7 @@ const RIVAL_CRESTS = [
   { tokens: ['jubilar'], src: '/assets/rivals/jubilar.svg' },
   { tokens: ['la olla'], src: '/assets/rivals/la-olla.svg' },
   { tokens: ['british'], src: '/assets/rivals/british.svg' },
+  { tokens: ['cardos'], src: '/assets/rivals/cardos.svg' },
 ];
 
 const ACCENTS = { á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ñ: 'n' };
