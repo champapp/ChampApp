@@ -1041,7 +1041,7 @@ export function useUpsertStandingsTable() {
         const { data: current, error: curErr } = await supabase.from('standings_tables').select('rows').eq('id', id).single();
         if (curErr) throw curErr;
         const { error } = await supabase.from('standings_tables')
-          .update({ cat, label, sort_order: sortOrder, rows, prev_rows: current.rows })
+          .update({ cat, label, sort_order: sortOrder, rows, prev_rows: current.rows, updated_at: new Date().toISOString() })
           .eq('id', id);
         if (error) throw error;
         return id;

@@ -6,11 +6,11 @@ import { useStandingsTables } from '../../lib/queries';
 
 const SHORT_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const CAT_ORDER = CATS.map((c) => c.id);
-const SHORT_DIVISION = { 'Primera': 'PRI', 'Intermedia': 'INTER', 'Pre-Intermedia': 'PRE' };
-// tablas cuyo label es "Serie X - <torneo>" (ej. fase de grupos de una copa)
-// se agrupan en una sola pestaña que despliega las series adentro, en vez de
-// un chip por serie
-const SERIE_RE = /^\s*serie\s+([a-z0-9]+)\s*-\s*(.+)$/i;
+const SHORT_DIVISION = { 'Primera': 'PRI', 'Intermedia': 'INTER', 'Pre-Intermedia': 'PRE', 'Grupo 1': 'M17' };
+// tablas de una misma categoría cuyo label es "<grupo> - <torneo>" (ej.
+// "Serie A - M19 Copa Uruguay", "Oro - M17 Copas") se agrupan en una sola
+// pestaña que despliega los grupos adentro, en vez de un chip por grupo
+const GROUP_RE = /^\s*(.+?)\s+-\s+(.+?)\s*$/;
 
 // tablas ya definidas/ganadas por el club, donde se muestra el trofeo al
 // lado del nombre de Champagnat (a mano, no se infiere de la posición)
@@ -83,19 +83,24 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
   });
 
   // arma la lista de "items" a mostrar como chip: las tablas sueltas quedan
-  // igual, pero varias "Serie X - <torneo>" de la misma categoría y torneo
-  // se agrupan en un solo item con todas sus series adentro
+  // igual, pero varias "<grupo> - <torneo>" de la misma categoría y torneo
+  // se agrupan en un solo item con todos sus grupos adentro
+  const tourneyCount = new Map();
+  for (const t of tables) {
+    const m = t.label.match(GROUP_RE);
+    if (m) tourneyCount.set(`${t.cat}::${m[2]}`, (tourneyCount.get(`${t.cat}::${m[2]}`) || 0) + 1);
+  }
   const items = [];
   const groupAt = new Map();
   for (const t of tables) {
-    const m = t.label.match(SERIE_RE);
-    if (m) {
-      const key = `${t.cat}::${m[2].trim()}`;
+    const m = t.label.match(GROUP_RE);
+    if (m && tourneyCount.get(`${t.cat}::${m[2]}`) > 1) {
+      const key = `${t.cat}::${m[2]}`;
       if (groupAt.has(key)) {
         items[groupAt.get(key)].tables.push(t);
       } else {
         groupAt.set(key, items.length);
-        items.push({ kind: 'group', id: `group:${key}`, cat: t.cat, label: m[2].trim(), tables: [t] });
+        items.push({ kind: 'group', id: `group:${key}`, cat: t.cat, label: m[2], tables: [t] });
       }
     } else {
       items.push({ kind: 'single', id: String(t.id), cat: t.cat, label: t.label, tables: [t] });
@@ -183,7 +188,7 @@ export function StandingsCard({ cat, nextMatch, pad = true }) {
               {active.tables.map((t) => (
                 <div key={t.id}>
                   <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 12.5, letterSpacing: 0.5, color: 'rgba(14,58,92,0.65)', textTransform: 'uppercase', marginBottom: 4 }}>
-                    {t.label.match(SERIE_RE)?.[1] ? `Serie ${t.label.match(SERIE_RE)[1].toUpperCase()}` : t.label}
+                    {t.label.match(GROUP_RE)?.[1] || t.label}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {standingsWithMovement(t).map((r) => <StandingsRow key={r.team} row={r} champion={isChampionTable(t.label)} />)}
