@@ -675,10 +675,13 @@ export function matchesForCat(matches, cat) {
     .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 }
 
-// la encuesta de un partido está activa desde el lunes de su semana hasta el día del partido
+// la encuesta de un partido está activa desde el lunes de su semana hasta el
+// día del partido; si el admin marcó `rsvp_open`, se abre desde ya (antes de
+// esa semana) y sigue hasta el día del partido
 export function isSurveyActive(match, today = todayISO()) {
   if (!match) return false;
-  return today >= mondayOf(match.date) && today <= match.date;
+  if (today > match.date) return false;
+  return !!match.rsvp_open || today >= mondayOf(match.date);
 }
 
 // partidos cuya encuesta RSVP está activa para una categoría, en orden de

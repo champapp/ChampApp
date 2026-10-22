@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CC, Icon, Field, TextInput, SelectInput } from '../../ui';
+import { CC, Icon, Field, TextInput, SelectInput, Toggle } from '../../ui';
 import { CATS, HOME_PLACE, PS_DIVS, M17_DIVS } from '../../lib/domain';
 import { useUpsertMatch, useDeleteMatch, useVenues, useUpsertVenue } from '../../lib/queries';
 
@@ -118,6 +118,7 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
     comp: match ? match.comp : 'Campeonato Uruguayo',
     cite: match ? (match.cite || '') : '',
     maps_url: match ? (match.maps_url || '') : '',
+    rsvp_open: match ? !!match.rsvp_open : false,
   }));
 
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
@@ -148,6 +149,8 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
     // o si estamos editando un partido existente (para poder borrarlo)
     const mapsUrlVal = !f.home && f.maps_url && f.maps_url.trim() ? f.maps_url.trim() : null;
     if (mapsUrlVal || f.id) data.maps_url = mapsUrlVal;
+    // idem: solo mandar rsvp_open si se activó o si se edita un partido existente
+    if (f.rsvp_open || f.id) data.rsvp_open = f.rsvp_open;
     upsert.mutate(data, {
       onSuccess: () => { onClose(); toast(isNew ? 'Partido creado' : 'Partido actualizado'); },
       onError: () => toast('No se pudo guardar. Probá de nuevo.'),
@@ -242,6 +245,15 @@ export function MatchEditSheet({ match, isNew, onClose, toast }) {
             </Field>
           )}
           <Field label="Competencia"><TextInput value={f.comp} onChange={(e) => set('comp', e.target.value)} placeholder="Campeonato Uruguayo" /></Field>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, border: `1.5px solid ${CC.line}`, background: '#fff', borderRadius: 12, padding: '11px 12px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, color: CC.ink, letterSpacing: 0.2 }}>Abrir confirmación de asistencia ya</div>
+              <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 12, color: CC.muted, marginTop: 2, lineHeight: 1.3 }}>
+                {f.rsvp_open ? 'Los jugadores ya pueden confirmar, aunque el partido no sea esta semana.' : 'Si no, la encuesta se abre el lunes de la semana del partido.'}
+              </div>
+            </div>
+            <Toggle checked={f.rsvp_open} onChange={(v) => set('rsvp_open', v)} />
+          </div>
           {!isNew && (
             <button onClick={handleDelete} style={{ border: `1.5px solid ${CC.bad}`, background: confirmDel ? CC.bad : 'rgba(224,82,78,0.06)', color: confirmDel ? '#fff' : CC.bad, padding: '11px', borderRadius: 12, cursor: 'pointer', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <Icon name="x" size={16} color={confirmDel ? '#fff' : CC.bad} sw={2.5} />{confirmDel ? '¿Seguro? Tocá de nuevo para eliminar' : 'Eliminar partido'}</button>

@@ -182,6 +182,9 @@ alter table public.matches add column if not exists time_preintermedia text;
 alter table public.matches add column if not exists cite_primera text;
 alter table public.matches add column if not exists cite_intermedia text;
 alter table public.matches add column if not exists cite_preintermedia text;
+-- confirmacion de asistencia abierta antes del lunes de la semana del partido
+-- (el admin lo activa al crear/editar el partido)
+alter table public.matches add column if not exists rsvp_open boolean not null default false;
 
 -- Tabla de posiciones (datos, no imagen): una fila por division/pool de
 -- una categoria (ej. PS puede tener "Top 12", "Intermedia" y
