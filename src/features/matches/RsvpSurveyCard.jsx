@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CC, Icon, RivalCrest, matchLongDate } from '../../ui';
-import { surveyMatches, matchRsvpStats, matchTimeLabel } from '../../lib/domain';
+import { surveyMatches, matchRsvpStats, matchTimeLabel, todayISO } from '../../lib/domain';
 import { usePlayers, useMatches, useRsvp, useSetRsvp } from '../../lib/queries';
 
 // barra de convocatoria de la categoría (cuántos asisten / no / sin responder)
@@ -141,7 +141,10 @@ function SurveyMatchCard({ m, me, players, rsvp, setRsvp, onlyIfPending, pad }) 
 // misma semana (ej: M17 sábado y domingo), muestra una tarjeta por cada uno.
 // `onlyIfPending`: solo se muestra mientras el jugador no respondió (la usa
 // el Inicio, que la oculta una vez contestada porque pasa a verse en Calendario).
-export function RsvpSurveyCard({ me, onlyIfPending = false, pad = true }) {
+// `focusMatchId`: partido al que llegó por un link compartido; se muestra su
+// encuesta aunque todavía no esté abierta, siempre que sea de su categoría y
+// no se haya jugado.
+export function RsvpSurveyCard({ me, onlyIfPending = false, pad = true, focusMatchId = null }) {
   const playersQ = usePlayers();
   const matchesQ = useMatches();
   const rsvpQ = useRsvp();
@@ -150,6 +153,13 @@ export function RsvpSurveyCard({ me, onlyIfPending = false, pad = true }) {
   if (playersQ.isLoading || matchesQ.isLoading || rsvpQ.isLoading) return null;
 
   const ms = surveyMatches({ matches: matchesQ.data, cat: me.cat, sub: me.sub });
+  if (focusMatchId && !ms.some((m) => m.id === focusMatchId)) {
+    const linked = matchesQ.data.find((m) => m.id === focusMatchId);
+    if (linked && linked.cat === me.cat && (me.sub == null || !linked.sub || linked.sub === me.sub) && linked.date >= todayISO()) {
+      ms.push(linked);
+      ms.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+    }
+  }
   if (!ms.length) return null;
 
   return ms.map((m) => (

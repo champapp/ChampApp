@@ -42,17 +42,19 @@ const PLAYER_SCREENS = {
   shop: { title: 'Shop', icon: 'bag' },
 };
 
-// Lee ?tab=&playerId= de la URL (link de una notificación push) y limpia la
-// URL para no reaplicar el deep link en navegaciones futuras dentro de la app.
+// Lee ?tab=&playerId=&match= de la URL (link de una notificación push, o link
+// de convocatoria compartido por WhatsApp) y limpia la URL para no reaplicar
+// el deep link en navegaciones futuras dentro de la app.
 function readDeepLinkFromUrl() {
   if (typeof window === 'undefined') return {};
   const params = new URLSearchParams(window.location.search);
-  if (!params.has('tab') && !params.has('playerId')) return {};
+  if (!params.has('tab') && !params.has('playerId') && !params.has('match')) return {};
 
   const tab = params.get('tab');
   const playerId = params.get('playerId');
+  const match = Number(params.get('match'));
   window.history.replaceState(null, '', window.location.pathname);
-  return { tab, playerId: playerId ? Number(playerId) : null };
+  return { tab, playerId: playerId ? Number(playerId) : null, match: Number.isFinite(match) && match > 0 ? match : null };
 }
 
 function ScreenLoading() {
@@ -119,7 +121,7 @@ export function AppShell() {
   } else if (isAdmin && tab === 'matches') {
     content = <MatchesScreen />;
   } else if (!isAdmin && tab === 'calendar') {
-    content = <CalendarScreen />;
+    content = <CalendarScreen focusMatchId={deepLink.match} />;
   } else if (!isAdmin && tab === 'gym') {
     content = <GymScreen />;
   } else if (isAdmin && tab === 'gym') {

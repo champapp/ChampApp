@@ -1,7 +1,50 @@
+import { useState } from 'react';
 import { CC, Icon, Avatar, matchLongDate } from '../../ui';
 import { matchRsvpStats, isSurveyActive } from '../../lib/domain';
 import { usePlayers, useRsvp, useSetRsvp } from '../../lib/queries';
 import { RsvpChip } from './RsvpChip';
+import { matchShareUrl, matchShareText } from './shareMatch';
+
+// Compartir el link de la convocatoria con las familias (grupo de WhatsApp).
+// Usa el menú nativo de compartir del celular; si no existe (escritorio),
+// abre WhatsApp Web con el mensaje armado.
+function ShareRow({ match }) {
+  const [copied, setCopied] = useState(false);
+  const message = () => `${matchShareText(match)}\n${matchShareUrl(match)}`;
+
+  async function share() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: matchShareText(match), url: matchShareUrl(match) });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(message())}`, '_blank', 'noopener');
+  }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(message());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // sin permiso de portapapeles: el botón Compartir sigue disponible
+    }
+  }
+
+  const btn = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', borderRadius: 12, padding: '10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 0.3 };
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+      <button onClick={share} style={{ ...btn, flex: 1.5, border: 'none', background: CC.gold, color: CC.navy900 }}>
+        <Icon name="send" size={16} color={CC.navy900} sw={2.4} />Compartir con las familias
+      </button>
+      <button onClick={copy} style={{ ...btn, flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy }}>
+        <Icon name={copied ? 'check' : 'box'} size={15} color={copied ? CC.good : CC.navy} sw={2.4} />{copied ? 'Copiado' : 'Copiar link'}
+      </button>
+    </div>
+  );
+}
 
 // Cuadro de convocatoria de toda la categoría (admin): tocar un jugador
 // cicla su respuesta yes → no → sin responder → yes. Mientras la
@@ -61,6 +104,7 @@ export function MatchRsvpSheet({ match, onClose }) {
             <div style={{ width: pct(stats.yes) + '%', background: CC.good }} />
             <div style={{ width: pct(stats.no) + '%', background: CC.bad }} />
           </div>
+          <ShareRow match={match} />
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, color: CC.faint, marginTop: 8, textAlign: 'center' }}>Tocá un jugador para registrar o cambiar su respuesta</div>
         </div>
 

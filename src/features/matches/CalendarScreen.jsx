@@ -7,7 +7,8 @@ import { NextMatchCard } from './NextMatchCard';
 import { RsvpSurveyCard } from './RsvpSurveyCard';
 
 // Pestaña "Calendario" del jugador: encuesta RSVP, próximo partido y fixture de su categoría.
-export function CalendarScreen() {
+// `focusMatchId`: partido de un link compartido (convocatoria por WhatsApp).
+export function CalendarScreen({ focusMatchId = null }) {
   const { player } = useAuth();
   const matchesQ = useMatches();
 
@@ -20,12 +21,19 @@ export function CalendarScreen() {
   const upcoming = all.filter((m) => m.date >= today);
   const past = all.filter((m) => m.date < today).reverse();
   const next = nextMatch({ matches: matchesQ.data, cat: player.cat, sub: player.sub });
+  const linked = focusMatchId ? matchesQ.data.find((m) => m.id === focusMatchId) : null;
+  const linkedOtherCat = linked && linked.cat !== player.cat ? linked : null;
 
   return (
     <div style={{ padding: '4px 16px 20px' }}>
       <SectionTitle icon="calendar">Calendario</SectionTitle>
 
-      <RsvpSurveyCard me={player} pad={false} />
+      {linkedOtherCat && (
+        <div style={{ background: 'rgba(249,178,51,0.14)', borderRadius: 12, padding: '10px 12px', marginBottom: 12, fontFamily: 'Barlow, sans-serif', fontSize: 13, color: '#6b4e1e', lineHeight: 1.35 }}>
+          El link que abriste es de la categoría <b>{linkedOtherCat.cat}</b> y este perfil es de <b>{player.cat}</b>. Para responder, entrá con el usuario del jugador de {linkedOtherCat.cat}.
+        </div>
+      )}
+      <RsvpSurveyCard me={player} pad={false} focusMatchId={focusMatchId} />
       <NextMatchCard match={next} player={player} />
 
       {upcoming.length > 1 && <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase', margin: '4px 0 9px' }}>Próximos partidos</div>}
