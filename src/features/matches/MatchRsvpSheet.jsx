@@ -3,7 +3,7 @@ import { CC, Icon, Avatar, matchLongDate } from '../../ui';
 import { matchRsvpStats, isSurveyActive } from '../../lib/domain';
 import { usePlayers, useRsvp, useSetRsvp } from '../../lib/queries';
 import { RsvpChip } from './RsvpChip';
-import { matchShareUrl, matchShareText } from './shareMatch';
+import { matchShareUrl, matchShareText, matchRsvpListText } from './shareMatch';
 
 // Compartir el link de la convocatoria con las familias (grupo de WhatsApp).
 // Usa el menú nativo de compartir del celular; si no existe (escritorio),
@@ -41,6 +41,45 @@ function ShareRow({ match }) {
       </button>
       <button onClick={copy} style={{ ...btn, flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy }}>
         <Icon name={copied ? 'check' : 'box'} size={15} color={copied ? CC.good : CC.navy} sw={2.4} />{copied ? 'Copiado' : 'Copiar link'}
+      </button>
+    </div>
+  );
+}
+
+// Lista de la convocatoria (asistirán / no asisten / falta responder) para
+// mandar por WhatsApp o copiar como texto.
+function ListShareRow({ text }) {
+  const [copied, setCopied] = useState(false);
+
+  async function send() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // sin permiso de portapapeles: el botón de WhatsApp sigue disponible
+    }
+  }
+
+  const btn = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', borderRadius: 12, padding: '10px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 15, letterSpacing: 0.3 };
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+      <button onClick={send} style={{ ...btn, flex: 1.5, border: 'none', background: CC.navy, color: '#fff' }}>
+        <Icon name="send" size={16} color="#fff" sw={2.4} />Enviar lista por WhatsApp
+      </button>
+      <button onClick={copy} style={{ ...btn, flex: 1, border: `1.5px solid ${CC.line}`, background: '#fff', color: CC.navy }}>
+        <Icon name={copied ? 'check' : 'box'} size={15} color={copied ? CC.good : CC.navy} sw={2.4} />{copied ? 'Copiada' : 'Copiar lista'}
       </button>
     </div>
   );
@@ -105,6 +144,7 @@ export function MatchRsvpSheet({ match, onClose }) {
             <div style={{ width: pct(stats.no) + '%', background: CC.bad }} />
           </div>
           <ShareRow match={match} />
+          <ListShareRow text={matchRsvpListText(match, stats)} />
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11, color: CC.faint, marginTop: 8, textAlign: 'center' }}>Tocá un jugador para registrar o cambiar su respuesta</div>
         </div>
 
