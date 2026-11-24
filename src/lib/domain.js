@@ -337,10 +337,14 @@ export function latestGymMarks(gymMarks, playerId) {
     .filter((g) => g.player_id === playerId)
     .forEach((g) => {
       const cur = out[g.exercise];
-      if (!cur || g.date > cur.date) out[g.exercise] = g;
+      // misma fecha: gana la última cargada (id mayor)
+      if (!cur || g.date > cur.date || (g.date === cur.date && g.id > cur.id)) out[g.exercise] = g;
     });
   return out;
 }
+
+// categorías cuyos jugadores cargan sus propias marcas de gimnasio (M17 en adelante)
+export const GYM_SELF_MARK_CATS = ['M17', 'M19', 'PS'];
 
 // historial completo de marcas de un jugador, agrupado por ejercicio (de
 // más reciente a más antigua), con la mejor marca de cada uno destacada
@@ -354,7 +358,7 @@ export function gymMarksHistory(gymMarks, playerId) {
       byExercise[g.exercise].push(g);
     });
   return Object.entries(byExercise).map(([exercise, marks]) => {
-    const sorted = [...marks].sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = [...marks].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
     const unit = sorted[0].unit;
     const isBetter = unit === 'seg' ? (a, b) => a.value < b.value : (a, b) => a.value > b.value;
     const best = sorted.reduce((m, x) => (isBetter(x, m) ? x : m), sorted[0]);

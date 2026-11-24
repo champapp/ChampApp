@@ -1,11 +1,11 @@
 import { CC, Icon, Card, SectionTitle, Empty, Toast, fmtDate } from '../../ui';
 import { useAuth } from '../auth/useAuth';
-import { latestGymMarks, routinesForPlayer } from '../../lib/domain';
+import { latestGymMarks, routinesForPlayer, GYM_SELF_MARK_CATS } from '../../lib/domain';
 import { useRoutines, useGymChecks, useGymMarks } from '../../lib/queries';
 import { useToast } from '../../lib/useToast';
 import { PlayerRoutines } from './PlayerRoutines';
 import { GymMarksHistory } from './GymMarksHistory';
-import { GymEditButton } from './GymEditButton';
+import { GymMarkAddButton } from './GymMarkAddButton';
 import { PlayerGallery } from '../players/PlayerGallery';
 
 export function GymScreen() {
@@ -25,7 +25,7 @@ export function GymScreen() {
   const myRoutines = routinesForPlayer({ routines, gymChecks, player });
   const latest = latestGymMarks(gymMarks, player.id);
   const exercises = Object.keys(latest);
-  const canEditMarks = player.cat === 'M19' || player.cat === 'PS';
+  const canAddMarks = GYM_SELF_MARK_CATS.includes(player.cat);
 
   return (
     <div style={{ padding: '4px 16px 20px' }}>
@@ -42,7 +42,7 @@ export function GymScreen() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 9px' }}>
         <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase' }}>Mis marcas</div>
-        {canEditMarks && <GymEditButton player={player} marks={gymMarks} toast={showToast} />}
+        {canAddMarks && <GymMarkAddButton player={player} marks={gymMarks} toast={showToast} />}
       </div>
       {exercises.length ? (
         <Card pad={16}>
@@ -63,7 +63,7 @@ export function GymScreen() {
           </div>
         </Card>
       ) : (
-        <Card pad={14}><Empty t="Todavía no tenés mediciones cargadas" /></Card>
+        <Card pad={14}><Empty t={canAddMarks ? 'Todavía no cargaste marcas. Tocá «Cargar marca» para empezar tu historial' : 'Todavía no tenés mediciones cargadas'} /></Card>
       )}
 
       {exercises.length > 0 && (

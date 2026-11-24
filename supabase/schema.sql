@@ -673,7 +673,7 @@ do $$
 declare
   t text;
   admin_write_tables text[] := array[
-    'player_photos', 'gym_marks', 'injuries', 'injury_protocols',
+    'player_photos', 'injuries', 'injury_protocols',
     'practices', 'attendance', 'matches', 'lineups', 'messages',
     'routines', 'shop_items', 'shop_sales', 'standings_tables', 'shop_config'
   ];
@@ -745,6 +745,41 @@ create policy injury_feedback_insert_own on public.injury_feedback
 drop policy if exists injury_feedback_delete on public.injury_feedback;
 create policy injury_feedback_delete on public.injury_feedback
   for delete to authenticated using (player_id = public.current_player_id() or public.is_admin());
+
+-- ---- gym_marks: el jugador (M17, M19 y PS) suma marcas propias, sin poder
+-- editar ni borrar las anteriores (asi el historial muestra el progreso);
+-- editar/borrar es solo del admin ----
+-- La base tenia politicas viejas (creadas a mano) que dejaban a cualquier
+-- jugador modificar y borrar sus marcas: se borran todas y se recrean.
+do $$
+declare
+  pol record;
+begin
+  for pol in select policyname from pg_policies where schemaname = 'public' and tablename = 'gym_marks' loop
+    execute format('drop policy %I on public.gym_marks', pol.policyname);
+  end loop;
+end $$;
+
+alter table public.gym_marks enable row level security;
+
+create policy gym_marks_select on public.gym_marks
+  for select to authenticated using (true);
+
+create policy gym_marks_insert_own_or_admin on public.gym_marks
+  for insert to authenticated
+  with check (
+    public.is_admin()
+    or (
+      player_id = public.current_player_id()
+      and exists (select 1 from public.players p where p.id = player_id and p.cat in ('M17', 'M19', 'PS'))
+    )
+  );
+
+create policy gym_marks_update_admin on public.gym_marks
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
+create policy gym_marks_delete_admin on public.gym_marks
+  for delete to authenticated using (public.is_admin());
 
 -- ---- gym_checks: el jugador marca su propia asistencia al gym ----
 alter table public.gym_checks enable row level security;

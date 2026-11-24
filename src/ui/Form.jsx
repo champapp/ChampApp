@@ -15,9 +15,9 @@ export function TextInput(props) {
   return <input {...props} style={{ ...inputStyle, ...(props.style || {}) }} />;
 }
 
-export function SelectInput({ value, onChange, children }) {
+export function SelectInput({ value, onChange, disabled, children }) {
   return (
-    <select value={value} onChange={onChange} style={{ ...inputStyle, appearance: 'none', backgroundImage: 'none', cursor: 'pointer' }}>
+    <select value={value} onChange={onChange} disabled={disabled} style={{ ...inputStyle, appearance: 'none', backgroundImage: 'none', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
       {children}
     </select>
   );

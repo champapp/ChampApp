@@ -786,6 +786,19 @@ export function useUploadShopPhoto() {
   });
 }
 
+// Una marca nueva de gimnasio cargada por el propio jugador. Solo inserta: las
+// marcas anteriores no se tocan, así el historial muestra el progreso.
+export function useAddGymMark() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ playerId, exercise, value, unit, date }) => {
+      const { error } = await supabase.from('gym_marks').insert({ player_id: playerId, exercise, value, unit, date });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gym_marks'] }),
+  });
+}
+
 // Guarda las mediciones de gimnasio de un jugador (admin): inserta nuevas,
 // actualiza existentes y elimina las quitadas.
 export function useSaveGymMarks() {
