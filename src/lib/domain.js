@@ -343,6 +343,17 @@ export function latestGymMarks(gymMarks, playerId) {
   return out;
 }
 
+// kg que corresponden a un % de un peso base (ej. 80% de 120 kg = 96 kg),
+// sin errores de coma flotante (hasta 2 decimales)
+export function percentOfWeight(baseKg, pct) {
+  return Math.round(baseKg * pct) / 100;
+}
+
+// redondeo al múltiplo más cercano de `step` kg (discos de 2,5 kg por defecto)
+export function roundToStep(kg, step = 2.5) {
+  return Math.round(kg / step) * step;
+}
+
 // categorías cuyos jugadores cargan sus propias marcas de gimnasio (M17 en adelante)
 export const GYM_SELF_MARK_CATS = ['M17', 'M19', 'PS'];
 

@@ -6,6 +6,7 @@ import { useToast } from '../../lib/useToast';
 import { PlayerRoutines } from './PlayerRoutines';
 import { GymMarksHistory } from './GymMarksHistory';
 import { GymMarkAddButton } from './GymMarkAddButton';
+import { PercentCalculator } from './PercentCalculator';
 import { PlayerGallery } from '../players/PlayerGallery';
 
 export function GymScreen() {
@@ -39,6 +40,8 @@ export function GymScreen() {
           <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 13.5, color: CC.muted }}>Todavía no tenés rutinas asignadas.</div>
         </Card>
       )}
+
+      <PercentCalculator marks={Object.values(latest)} />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 9px' }}>
         <div style={{ fontFamily: 'Barlow, sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: CC.muted, textTransform: 'uppercase' }}>Mis marcas</div>

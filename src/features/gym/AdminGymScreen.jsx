@@ -5,6 +5,7 @@ import { usePlayers, useGymMarks, usePractices, useAttendance } from '../../lib/
 import { GYM_CATS, categoryAverages } from '../../lib/domain';
 import { AdminRoutines } from './AdminRoutines';
 import { BulkMarksUpload } from './BulkMarksUpload';
+import { PercentCalculator } from './PercentCalculator';
 
 function GymAveragesSection() {
   const playersQ = usePlayers();
@@ -75,6 +76,7 @@ export function AdminGymScreen() {
           <Icon name="upload" size={14} color={CC.navy} sw={2.4} />Importar CSV
         </button>
       }>Gimnasio</SectionTitle>
+      <PercentCalculator />
       <AdminRoutines toast={showToast} />
       <GymAveragesSection />
       {importOpen && <BulkMarksUpload onClose={() => setImportOpen(false)} />}
